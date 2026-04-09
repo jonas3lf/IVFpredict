@@ -46,7 +46,7 @@
 
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .input-group { margin-bottom: 12px; }
-        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+        label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
         
         input, select {
             width: 100%;
@@ -56,17 +56,48 @@
             font-size: 16px;
             background: #FFF;
             box-sizing: border-box;
+            -webkit-appearance: none;
         }
 
+        /* OPRAVA PŘEPÍNAČŮ */
         .toggle-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 0.5px solid #F5F5F7;
         }
         .toggle-row:last-child { border-bottom: none; }
-        .toggle-row label { margin-bottom: 0; cursor: pointer; flex-grow: 1; }
+        .toggle-row label { margin-bottom: 0; cursor: pointer; flex-grow: 1; font-weight: 500; }
+
+        .switch { 
+            position: relative; 
+            display: inline-block; 
+            width: 51px; /* Fixní šířka */
+            height: 31px; 
+            flex-shrink: 0; /* Zabrání roztažení */
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { 
+            position: absolute; 
+            cursor: pointer; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            background-color: #E5E5EA; 
+            transition: .3s; 
+            border-radius: 34px; 
+        }
+        .slider:before { 
+            position: absolute; 
+            content: ""; 
+            height: 27px; width: 27px; 
+            left: 2px; bottom: 2px; 
+            background-color: white; 
+            transition: .3s; 
+            border-radius: 50%; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(20px); }
 
         button {
             width: 100%;
@@ -79,8 +110,11 @@
             font-weight: 600;
             cursor: pointer;
             margin-top: 10px;
+            -webkit-tap-highlight-color: transparent;
         }
+        button:active { background: #333; }
 
+        /* Results Area */
         #result { display: none; animation: fadeIn 0.5s ease; }
         .stat-header { text-align: center; margin-bottom: 20px; }
         .chance-val { font-size: 60px; font-weight: 800; color: var(--clinic-blue); margin: 5px 0; }
@@ -98,14 +132,8 @@
             line-height: 1.4;
             color: #333;
             margin-top: 20px;
+            border-left: 4px solid var(--clinic-blue);
         }
-
-        .switch { position: relative; display: inline-block; width: 51px; height: 31px; flex-shrink: 0; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E5E5EA; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        input:checked + .slider { background-color: var(--success); }
-        input:checked + .slider:before { transform: translateX(20px); }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -209,7 +237,6 @@
 
 <script>
 function calculate() {
-    // Sběr dat
     const age = parseInt(document.getElementById('age').value);
     const ageM = parseInt(document.getElementById('age_man').value);
     const amh = parseFloat(document.getElementById('amh').value);
@@ -241,7 +268,6 @@ function calculate() {
         predictedEggs = (predictedEggs * 0.4) + (eggsFromAFC * 0.6);
     }
 
-    // Diagnostické modifikátory (kumulativní)
     if (isPcos) predictedEggs *= 1.25;
     if (isEndo) predictedEggs *= 0.82;
     if (isDor) predictedEggs *= 0.85;
@@ -250,20 +276,18 @@ function calculate() {
 
     predictedEggs = Math.min(Math.max(predictedEggs, 1), 35);
 
-    // 2. Blastulační model (oplození a vývoj)
-    // Baseline pro konvenční IVF (bez ICSI) je o něco nižší u specifických diagnóz
+    // 2. Blastulační model
     let blastRate = isIcsi ? 0.28 : 0.24; 
     
     if (isPcos) blastRate *= 0.88; 
     if (isMale) {
-        // Závažný male faktor bez ICSI/Zymotu je kritický
         let malePenalty = 0.5;
         if (isIcsi) malePenalty = 0.85;
         if (isZymot) malePenalty = 1.0; 
         blastRate *= malePenalty;
     }
     
-    if (isZymot) blastRate *= 1.12; // Bonus k blastulaci pro zdravé spermie
+    if (isZymot) blastRate *= 1.12; 
     if (ageM > 45) blastRate *= 0.92;
     if (isSmoke) blastRate *= 0.82;
 
@@ -283,7 +307,7 @@ function calculate() {
     let euFinal = blasts * euRate;
     let prob = (1 - Math.exp(-euFinal)) * 100;
 
-    // UI
+    // UI Update
     document.getElementById('result').style.display = 'block';
     document.getElementById('res_perc').innerText = Math.round(Math.min(prob, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
@@ -292,18 +316,17 @@ function calculate() {
 
     setTimeout(() => {
         document.getElementById('bar_eggs').style.width = "95%";
-        document.getElementById('bar_blasts').style.width = Math.min((blasts / predictedEggs) * 350, 100) + "%";
+        document.getElementById('bar_blasts').style.width = Math.min((blasts / predictedEggs) * 300, 100) + "%";
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
-    // Interpretace
     let advice = `<strong>Klinická úvaha:</strong> `;
-    if (!isIcsi && isMale) advice += "Pozor: Konvenční IVF u mužského faktoru představuje riziko selhání oplození. ";
-    if (isEndo && isPcos) advice += "Kombinace endometriózy a PCOS vyžaduje velmi opatrný stimulační protokol. ";
-    if (isSmoke) advice += "Kouření snižuje celkovou metabolickou kompetenci oocytů. ";
-    if (prob < 30) advice += "Vzhledem k nízké pravděpodobnosti doporučujeme zvážit genetické testování (PGT-A) k eliminaci neefektivních transferů. ";
+    if (!isIcsi && isMale) advice += "Pozor: Riziko selhání oplození při konvenčním IVF. ";
+    if (isEndo && isPcos) advice += "Kombinace EMS a PCOS vyžaduje specifický protokol. ";
+    if (isSmoke) advice += "Kouření snižuje kvalitu oocytů. ";
+    if (prob < 30) advice += "Doporučujeme zvážit PGT-A. ";
     
-    document.getElementById('advice').innerHTML = (advice === `<strong>Klinická úvaha:</strong> `) ? "Prognóza odpovídá standardnímu klinickému postupu." : advice;
+    document.getElementById('advice').innerHTML = (advice === `<strong>Klinická úvaha:</strong> `) ? "Prognóza odpovídá standardnímu postupu." : advice;
     
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
