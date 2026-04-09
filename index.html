@@ -259,7 +259,7 @@ function updateAverageAMH() {
     const amhField = document.getElementById('amh');
     
     if (!age) return;
-    if (age > 49) age = 49; // Strop pro věk v predikci AMH
+    if (age > 49) age = 49;
 
     let avgNg = 3.5 - ((age - 25) * 0.16);
     avgNg = Math.max(0.2, Math.min(4.5, avgNg));
@@ -268,7 +268,6 @@ function updateAverageAMH() {
 }
 
 function calculate() {
-    // VSTUPNÍ VALIDACE A ZASTROPOVÁNÍ
     let age = parseInt(document.getElementById('age').value);
     if (age > 49) age = 49;
     
@@ -276,7 +275,6 @@ function calculate() {
     let amhInput = parseFloat(document.getElementById('amh').value);
     const amhUnit = document.getElementById('amh_unit').value;
     
-    // Přepočet a zastropování AMH na 19.9 ng/ml
     let amh = amhUnit === 'nmol' ? amhInput / 7.14 : amhInput;
     if (amh > 19.9) amh = 19.9;
 
@@ -295,7 +293,6 @@ function calculate() {
 
     const bmi = weight / ((height/100)**2);
 
-    // 1. ZISK OOCYTŮ (Saturace nad 4 ng/ml)
     let effectiveAmh = amh;
     if (amh > 4) {
         effectiveAmh = 4 + Math.log10(amh - 3); 
@@ -309,7 +306,6 @@ function calculate() {
     if (isPcos) predictedEggs *= 1.15;
     if (isEndo) predictedEggs *= 0.82;
 
-    // BMI Penalizace
     let bmiPenalty = 1.0;
     if (bmi >= 30 && bmi < 35) bmiPenalty = 0.88;
     else if (bmi >= 35 && bmi < 40) bmiPenalty = 0.80;
@@ -319,7 +315,6 @@ function calculate() {
     predictedEggs *= prevPenalty;
     predictedEggs = Math.min(Math.max(predictedEggs, 0.5), 35);
 
-    // 2. BLASTOCYSTY
     let blastRate = isIcsi ? 0.28 : 0.24; 
     if (isMale) blastRate *= isIcsi ? (isZymot ? 1.0 : 0.82) : 0.45;
     if (isZymot) blastRate *= 1.15; 
@@ -329,7 +324,6 @@ function calculate() {
 
     let blasts = predictedEggs * blastRate;
 
-    // 3. EUPLOIDIE
     let euRate = 0.65;
     if (age > 34 && age <= 37) euRate = 0.50;
     else if (age > 37 && age <= 39) euRate = 0.35;
@@ -341,7 +335,6 @@ function calculate() {
     let euFinal = blasts * euRate;
     let prob1 = (1 - Math.exp(-euFinal)) * 100;
 
-    // UI Rendering
     document.getElementById('result').style.display = 'block';
     document.getElementById('res_perc').innerText = Math.round(Math.min(prob1, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
@@ -361,12 +354,11 @@ function calculate() {
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
-    // INTERPRETACE
     let adv = `<strong>Klinická interpretace:</strong><br><br>`;
-    if (parseInt(document.getElementById('age').value) > 49) adv += `<p style="color:var(--danger);">⚠️ Věk nad 49 let: Model počítá s hraniční hodnotou 49 let.</p>`;
-    if (amhInput > 19.9 && amhUnit === 'ng') adv += `<p style="color:var(--danger);">⚠️ AMH omezeno na 19.9 ng/ml pro zachování klinické logiky.</p>`;
     
-    adv += `<p>• <strong>Věk (${age} let):</strong> Šance na euploidní embryo je ${Math.round(euRate*100)} %.</p>`;
+    // ZMĚNĚNÁ FORMULACE DLE POŽADAVKU
+    adv += `<p>• <strong>Věk (${age} let):</strong> Očekávaná šance na euploidii je **${Math.round(euRate*100)} % na každé testované embryo**.</p>`;
+    
     if (bmi >= 30) adv += `<p>• <strong>BMI:</strong> Snížená citlivost na stimulaci z důvodu vyšší hmotnosti.</p>`;
     if (isPcos) adv += `<p>• <strong>PCOS:</strong> Vyšší kvantita, ale riziko nižší vyzrálosti při extrémním zisku.</p>`;
 
