@@ -42,7 +42,7 @@
             margin-bottom: 15px;
         }
 
-        h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 15px; letter-spacing: 1px; border-bottom: 0.5px solid #F5F5F7; padding-bottom: 5px; }
+        h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 10px; letter-spacing: 1px; border-bottom: 0.5px solid #F5F5F7; padding-bottom: 5px; }
 
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .input-group { margin-bottom: 12px; }
@@ -56,7 +56,6 @@
             font-size: 16px;
             background: #FFF;
             box-sizing: border-box;
-            -webkit-appearance: none;
         }
 
         .toggle-row {
@@ -67,6 +66,7 @@
             border-bottom: 0.5px solid #F5F5F7;
         }
         .toggle-row:last-child { border-bottom: none; }
+        .toggle-row label { margin-bottom: 0; cursor: pointer; flex-grow: 1; }
 
         button {
             width: 100%;
@@ -100,7 +100,7 @@
             margin-top: 20px;
         }
 
-        .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
+        .switch { position: relative; display: inline-block; width: 51px; height: 31px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E5E5EA; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -119,10 +119,14 @@
     </header>
 
     <div class="card">
-        <h2>Pacientka & Partner</h2>
+        <h2>Základní parametry</h2>
         <div class="grid">
             <div class="input-group"><label>Věk ženy</label><input type="number" id="age" value="35"></div>
             <div class="input-group"><label>Věk partnera</label><input type="number" id="age_man" value="37"></div>
+        </div>
+        <div class="grid">
+            <div class="input-group"><label>AMH (ng/ml)</label><input type="number" id="amh" value="2.0" step="0.1"></div>
+            <div class="input-group"><label>AFC (volitelné)</label><input type="number" id="afc" placeholder="AFC"></div>
         </div>
         <div class="grid">
             <div class="input-group"><label>Výška (cm)</label><input type="number" id="height" value="168"></div>
@@ -131,48 +135,46 @@
     </div>
 
     <div class="card">
-        <h2>Ovariální rezerva & Historie</h2>
-        <div class="grid">
-            <div class="input-group"><label>AMH (ng/ml)</label><input type="number" id="amh" value="2.0" step="0.1"></div>
-            <div class="input-group"><label>AFC (volitelné)</label><input type="number" id="afc" placeholder="AFC"></div>
-        </div>
-        <div class="input-group">
-            <label>Předchozí neúspěšné odběry (OPU)</label>
-            <select id="prev_cycles">
-                <option value="0">Žádný (1. cyklus)</option>
-                <option value="1">1 neúspěšný cyklus</option>
-                <option value="2">2 a více neúspěšných</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>Klinické Faktory</h2>
-        <div class="input-group">
-            <label>Hlavní diagnóza</label>
-            <select id="diagnosis">
-                <option value="norm">Idiopatická neplodnost</option>
-                <option value="pcos">PCOS (Polycystická ovaria)</option>
-                <option value="endo">Endometrióza (st. III/IV)</option>
-                <option value="male">Závažný male faktor</option>
-                <option value="dor">Nízká ovariální rezerva (DOR)</option>
-            </select>
+        <h2>Klinické faktory & Diagnózy</h2>
+        <div class="toggle-row">
+            <label for="diag_pcos">PCOS</label>
+            <label class="switch"><input type="checkbox" id="diag_pcos"><span class="slider"></span></label>
         </div>
         <div class="toggle-row">
-            <label>Anamnéza Endometriózy (vliv na oocyty)</label>
-            <label class="switch"><input type="checkbox" id="endo_check"><span class="slider"></span></label>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>Laboratoř & Životní styl</h2>
-        <div class="toggle-row">
-            <label>ICSI + ZyMōt selekce</label>
-            <label class="switch"><input type="checkbox" id="zymot" checked><span class="slider"></span></label>
+            <label for="diag_endo">Endometrióza (EMS)</label>
+            <label class="switch"><input type="checkbox" id="diag_endo"><span class="slider"></span></label>
         </div>
         <div class="toggle-row">
-            <label>Aktivní kouření (pár)</label>
+            <label for="diag_male">Závažný mužský faktor</label>
+            <label class="switch"><input type="checkbox" id="diag_male"><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+            <label for="diag_dor">Nízká rezerva (DOR)</label>
+            <label class="switch"><input type="checkbox" id="diag_dor"><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+            <label for="smoke">Aktivní kouření (pár)</label>
             <label class="switch"><input type="checkbox" id="smoke"><span class="slider"></span></label>
+        </div>
+        <div class="input-group" style="margin-top:10px;">
+            <label>Předchozí neúspěšná OPU</label>
+            <select id="prev_cycles">
+                <option value="0">Žádná</option>
+                <option value="1">1 cyklus</option>
+                <option value="2">2 a více</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Laboratorní metody</h2>
+        <div class="toggle-row">
+            <label for="icsi">Metoda ICSI</label>
+            <label class="switch"><input type="checkbox" id="icsi" checked><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+            <label for="zymot">ZyMōt selekce spermií</label>
+            <label class="switch"><input type="checkbox" id="zymot" checked><span class="slider"></span></label>
         </div>
     </div>
 
@@ -207,53 +209,67 @@
 
 <script>
 function calculate() {
+    // Sběr dat
     const age = parseInt(document.getElementById('age').value);
     const ageM = parseInt(document.getElementById('age_man').value);
     const amh = parseFloat(document.getElementById('amh').value);
     const afc = parseInt(document.getElementById('afc').value) || 0;
     const height = parseInt(document.getElementById('height').value);
     const weight = parseInt(document.getElementById('weight').value);
-    const diag = document.getElementById('diagnosis').value;
-    const prev = parseInt(document.getElementById('prev_cycles').value);
-    const hasEndo = document.getElementById('endo_check').checked;
-    const isZymot = document.getElementById('zymot').checked;
+    
+    const isPcos = document.getElementById('diag_pcos').checked;
+    const isEndo = document.getElementById('diag_endo').checked;
+    const isMale = document.getElementById('diag_male').checked;
+    const isDor = document.getElementById('diag_dor').checked;
     const isSmoke = document.getElementById('smoke').checked;
+    const prev = parseInt(document.getElementById('prev_cycles').value);
+    
+    const isIcsi = document.getElementById('icsi').checked;
+    const isZymot = document.getElementById('zymot').checked;
 
     const bmi = weight / ((height/100)**2);
 
-    // 1. Zisk vajíček (MII) - KOMPROMISNÍ KOEFICIENT 5.3
+    // 1. Zisk vajíček (MII) - Koeficient 5.3 (střední cesta)
     let baseMultiplier = 5.3;
     if (age < 32) baseMultiplier = 5.8;
     if (age > 40) baseMultiplier = 4.4;
 
     let predictedEggs = amh * baseMultiplier;
     
-    // Korekce dle AFC (váha 60%)
     if (afc > 0) {
         let eggsFromAFC = afc * 0.82;
         predictedEggs = (predictedEggs * 0.4) + (eggsFromAFC * 0.6);
     }
 
-    // Modifikátory zisku oocytů
-    if (diag === 'pcos') predictedEggs *= 1.22;
-    if (diag === 'endo' || hasEndo) predictedEggs *= 0.82;
-    if (diag === 'dor') predictedEggs *= 0.85;
+    // Diagnostické modifikátory (kumulativní)
+    if (isPcos) predictedEggs *= 1.25;
+    if (isEndo) predictedEggs *= 0.82;
+    if (isDor) predictedEggs *= 0.85;
     if (bmi > 30) predictedEggs *= 0.86;
     if (prev > 0) predictedEggs *= 0.92;
 
     predictedEggs = Math.min(Math.max(predictedEggs, 1), 35);
 
-    // 2. Blastulační model (úbytek oocyty -> blastocysty)
-    let blastRate = 0.27; 
-    if (diag === 'pcos') blastRate *= 0.88; 
-    if (diag === 'male') blastRate *= 0.82;
-    if (isZymot) blastRate *= 1.15; 
+    // 2. Blastulační model (oplození a vývoj)
+    // Baseline pro konvenční IVF (bez ICSI) je o něco nižší u specifických diagnóz
+    let blastRate = isIcsi ? 0.28 : 0.24; 
+    
+    if (isPcos) blastRate *= 0.88; 
+    if (isMale) {
+        // Závažný male faktor bez ICSI/Zymotu je kritický
+        let malePenalty = 0.5;
+        if (isIcsi) malePenalty = 0.85;
+        if (isZymot) malePenalty = 1.0; 
+        blastRate *= malePenalty;
+    }
+    
+    if (isZymot) blastRate *= 1.12; // Bonus k blastulaci pro zdravé spermie
     if (ageM > 45) blastRate *= 0.92;
     if (isSmoke) blastRate *= 0.82;
 
     let blasts = predictedEggs * blastRate;
 
-    // 3. Euploidy Rate (Genetika)
+    // 3. Euploidy Rate
     let euRate = 0;
     if (age < 35) euRate = 0.65;
     else if (age <= 37) euRate = 0.50;
@@ -262,12 +278,12 @@ function calculate() {
     else if (age <= 43) euRate = 0.08;
     else euRate = 0.04;
 
-    if (hasEndo || diag === 'endo') euRate *= 0.94;
+    if (isEndo) euRate *= 0.94;
 
     let euFinal = blasts * euRate;
     let prob = (1 - Math.exp(-euFinal)) * 100;
 
-    // UI Rendering
+    // UI
     document.getElementById('result').style.display = 'block';
     document.getElementById('res_perc').innerText = Math.round(Math.min(prob, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
@@ -276,19 +292,19 @@ function calculate() {
 
     setTimeout(() => {
         document.getElementById('bar_eggs').style.width = "95%";
-        document.getElementById('bar_blasts').style.width = Math.min((blasts / predictedEggs) * 300, 100) + "%";
+        document.getElementById('bar_blasts').style.width = Math.min((blasts / predictedEggs) * 350, 100) + "%";
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
-    // Klinická interpretace
+    // Interpretace
     let advice = `<strong>Klinická úvaha:</strong> `;
-    if (hasEndo || diag === 'endo') advice += "Endometrióza může negativně ovlivňovat kvalitu oocytů i ovariální odpověď. ";
-    if (diag === 'pcos') advice += "PCOS zvyšuje zisk oocytů, ale často bývá spojován s vyšším podílem nezralých vajíček a nižší blastulační mírou. ";
-    if (diag === 'male' && !isZymot) advice += "U závažného mužského faktoru bez metod selekce hrozí výrazný propad ve vývoji embryí po 3. dni. ";
-    if (prob < 35) advice += "Nižší šance na zisk euploidního embrya v jednom cyklu. Vhodné diskutovat DuoStim či shromažďování embryí. ";
-    if (isSmoke) advice += "Kouření snižuje šanci na úspěšnou stimulaci o cca 18 %. ";
+    if (!isIcsi && isMale) advice += "Pozor: Konvenční IVF u mužského faktoru představuje riziko selhání oplození. ";
+    if (isEndo && isPcos) advice += "Kombinace endometriózy a PCOS vyžaduje velmi opatrný stimulační protokol. ";
+    if (isSmoke) advice += "Kouření snižuje celkovou metabolickou kompetenci oocytů. ";
+    if (prob < 30) advice += "Vzhledem k nízké pravděpodobnosti doporučujeme zvážit genetické testování (PGT-A) k eliminaci neefektivních transferů. ";
     
-    document.getElementById('advice').innerHTML = advice;
+    document.getElementById('advice').innerHTML = (advice === `<strong>Klinická úvaha:</strong> `) ? "Prognóza odpovídá standardnímu klinickému postupu." : advice;
+    
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 </script>
