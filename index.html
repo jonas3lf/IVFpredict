@@ -59,7 +59,7 @@
             -webkit-appearance: none;
         }
 
-        /* OPRAVA PŘEPÍNAČŮ */
+        /* OPRAVENÉ PŘEPÍNAČE PRO IOS */
         .toggle-row {
             display: flex;
             justify-content: space-between;
@@ -68,16 +68,22 @@
             border-bottom: 0.5px solid #F5F5F7;
         }
         .toggle-row:last-child { border-bottom: none; }
-        .toggle-row label { margin-bottom: 0; cursor: pointer; flex-grow: 1; font-weight: 500; }
+        .toggle-row label { margin-bottom: 0; cursor: pointer; flex-grow: 1; font-weight: 500; font-size: 15px; }
 
         .switch { 
             position: relative; 
             display: inline-block; 
-            width: 51px; /* Fixní šířka */
-            height: 31px; 
-            flex-shrink: 0; /* Zabrání roztažení */
+            width: 51px !important; 
+            min-width: 51px !important;
+            height: 31px !important; 
+            flex-shrink: 0;
         }
-        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch input { 
+            opacity: 0; 
+            width: 0; 
+            height: 0; 
+            position: absolute;
+        }
         .slider { 
             position: absolute; 
             cursor: pointer; 
@@ -112,9 +118,7 @@
             margin-top: 10px;
             -webkit-tap-highlight-color: transparent;
         }
-        button:active { background: #333; }
 
-        /* Results Area */
         #result { display: none; animation: fadeIn 0.5s ease; }
         .stat-header { text-align: center; margin-bottom: 20px; }
         .chance-val { font-size: 60px; font-weight: 800; color: var(--clinic-blue); margin: 5px 0; }
@@ -187,9 +191,9 @@
         <div class="input-group" style="margin-top:10px;">
             <label>Předchozí neúspěšná OPU</label>
             <select id="prev_cycles">
-                <option value="0">Žádná</option>
-                <option value="1">1 cyklus</option>
-                <option value="2">2 a více</option>
+                <option value="1.0">Žádná</option>
+                <option value="0.90">1 neúspěšný cyklus (-10%)</option>
+                <option value="0.75">2 a více neúspěšných (-25%)</option>
             </select>
         </div>
     </div>
@@ -249,14 +253,14 @@ function calculate() {
     const isMale = document.getElementById('diag_male').checked;
     const isDor = document.getElementById('diag_dor').checked;
     const isSmoke = document.getElementById('smoke').checked;
-    const prev = parseInt(document.getElementById('prev_cycles').value);
+    const prevPenalty = parseFloat(document.getElementById('prev_cycles').value);
     
     const isIcsi = document.getElementById('icsi').checked;
     const isZymot = document.getElementById('zymot').checked;
 
     const bmi = weight / ((height/100)**2);
 
-    // 1. Zisk vajíček (MII) - Koeficient 5.3 (střední cesta)
+    // 1. Zisk vajíček (MII) - Koeficient 5.3
     let baseMultiplier = 5.3;
     if (age < 32) baseMultiplier = 5.8;
     if (age > 40) baseMultiplier = 4.4;
@@ -268,32 +272,31 @@ function calculate() {
         predictedEggs = (predictedEggs * 0.4) + (eggsFromAFC * 0.6);
     }
 
+    // Aplikace klinických modifikátorů
     if (isPcos) predictedEggs *= 1.25;
     if (isEndo) predictedEggs *= 0.82;
     if (isDor) predictedEggs *= 0.85;
-    if (bmi > 30) predictedEggs *= 0.86;
-    if (prev > 0) predictedEggs *= 0.92;
+    if (bmi > 30) predictedEggs *= 0.88;
+    
+    // Penalizace za neúspěšné cykly
+    predictedEggs *= prevPenalty;
 
     predictedEggs = Math.min(Math.max(predictedEggs, 1), 35);
 
-    // 2. Blastulační model
+    // 2. Blastocysty
     let blastRate = isIcsi ? 0.28 : 0.24; 
-    
     if (isPcos) blastRate *= 0.88; 
     if (isMale) {
-        let malePenalty = 0.5;
-        if (isIcsi) malePenalty = 0.85;
-        if (isZymot) malePenalty = 1.0; 
+        let malePenalty = isIcsi ? (isZymot ? 1.0 : 0.85) : 0.5;
         blastRate *= malePenalty;
     }
-    
     if (isZymot) blastRate *= 1.12; 
     if (ageM > 45) blastRate *= 0.92;
-    if (isSmoke) blastRate *= 0.82;
+    if (isSmoke) blastRate *= 0.80;
 
     let blasts = predictedEggs * blastRate;
 
-    // 3. Euploidy Rate
+    // 3. Euploidie
     let euRate = 0;
     if (age < 35) euRate = 0.65;
     else if (age <= 37) euRate = 0.50;
@@ -302,12 +305,12 @@ function calculate() {
     else if (age <= 43) euRate = 0.08;
     else euRate = 0.04;
 
-    if (isEndo) euRate *= 0.94;
+    if (isEndo) euRate *= 0.92;
 
     let euFinal = blasts * euRate;
     let prob = (1 - Math.exp(-euFinal)) * 100;
 
-    // UI Update
+    // UI Render
     document.getElementById('result').style.display = 'block';
     document.getElementById('res_perc').innerText = Math.round(Math.min(prob, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
@@ -316,18 +319,16 @@ function calculate() {
 
     setTimeout(() => {
         document.getElementById('bar_eggs').style.width = "95%";
-        document.getElementById('bar_blasts').style.width = Math.min((blasts / predictedEggs) * 300, 100) + "%";
+        document.getElementById('bar_blasts').style.width = Math.min((blasts / predictedEggs) * 350, 100) + "%";
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
     let advice = `<strong>Klinická úvaha:</strong> `;
-    if (!isIcsi && isMale) advice += "Pozor: Riziko selhání oplození při konvenčním IVF. ";
-    if (isEndo && isPcos) advice += "Kombinace EMS a PCOS vyžaduje specifický protokol. ";
-    if (isSmoke) advice += "Kouření snižuje kvalitu oocytů. ";
-    if (prob < 30) advice += "Doporučujeme zvážit PGT-A. ";
+    if (prevPenalty < 1.0) advice += `Předchozí neúspěchy indikují riziko nižší odpovědi. `;
+    if (isEndo) advice += "Endometrióza významně snižuje výtěžnost oocytů. ";
+    if (isSmoke) advice += "Kouření snižuje šanci na blastocystu o cca 20 %. ";
     
-    document.getElementById('advice').innerHTML = (advice === `<strong>Klinická úvaha:</strong> `) ? "Prognóza odpovídá standardnímu postupu." : advice;
-    
+    document.getElementById('advice').innerHTML = advice;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 </script>
