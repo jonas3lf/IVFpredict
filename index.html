@@ -3,54 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>IVF Predictor Ultra</title>
-    
+    <title>IVF Predictor EBM</title>
     <link rel="apple-touch-icon" href="icon.png">
 
     <style>
         :root {
             --ios-blue: #007AFF;
             --ios-green: #34C759;
-            --ios-red: #FF3B30;
             --ios-bg: #F2F2F7;
             --ios-card: #FFFFFF;
             --ios-gray: #8E8E93;
-            --ios-label: #3A3A3C;
-            --safe-top: env(safe-area-inset-top);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--ios-bg);
             margin: 0;
-            padding: calc(20px + var(--safe-top)) 20px 40px 20px;
+            padding: calc(20px + env(safe-area-inset-top)) 20px 40px 20px;
             color: #000;
-            line-height: 1.4;
         }
 
-        .container { max-width: 600px; margin: 0 auto; }
-
-        header { text-align: center; margin-bottom: 30px; }
-        header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.5px; }
-        header p { color: var(--ios-gray); font-size: 15px; }
-
+        .container { max-width: 550px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 25px; }
+        header h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+        
         .card {
             background: var(--ios-card);
             border-radius: 14px;
-            padding: 20px;
+            padding: 18px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
-        h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--ios-gray); margin-bottom: 12px; margin-left: 5px; }
+        h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--ios-gray); margin-bottom: 12px; }
 
-        .input-row { margin-bottom: 16px; }
-        .input-row:last-child { margin-bottom: 0; }
-
-        label { display: block; font-size: 15px; font-weight: 500; margin-bottom: 8px; color: var(--ios-label); }
+        .input-row { margin-bottom: 15px; }
+        label { display: block; font-size: 15px; font-weight: 500; margin-bottom: 6px; }
 
         input, select {
             width: 100%;
@@ -58,21 +48,17 @@
             border: 1px solid #D1D1D6;
             border-radius: 10px;
             font-size: 16px;
-            background-color: #FFF;
             box-sizing: border-box;
-            transition: border-color 0.2s;
-            -webkit-appearance: none; /* Odstraní výchozí styling na Safari */
+            background-color: #FFF;
         }
 
-        input:focus { border-color: var(--ios-blue); outline: none; }
-
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
         .switch-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 0.5px solid #E5E5EA;
         }
         .switch-row:last-child { border-bottom: none; }
@@ -86,73 +72,30 @@
             border-radius: 16px;
             font-size: 18px;
             font-weight: 600;
-            margin-top: 10px;
             cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            transition: opacity 0.2s;
-        }
-        button:active { opacity: 0.8; }
-
-        #result {
-            display: none;
-            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .result-main { text-align: center; padding: 10px 0; }
-        .big-number { font-size: 54px; font-weight: 800; color: var(--ios-blue); margin: 5px 0; }
-        .cumul-number { font-size: 32px; font-weight: 700; color: var(--ios-green); }
+        #result { display: none; margin-top: 20px; animation: fadeIn 0.4s ease; }
+        .result-main { text-align: center; }
+        .big-number { font-size: 52px; font-weight: 800; color: var(--ios-blue); margin: 5px 0; }
+        .cumul-box { color: var(--ios-green); font-weight: 700; font-size: 28px; }
 
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            background: #E5E5EA;
-            margin-bottom: 10px;
-        }
-
-        .disclaimer {
-            font-size: 12px;
-            color: var(--ios-gray);
-            text-align: center;
-            margin-top: 30px;
-            padding: 0 20px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* iOS Switch Style */
-        .toggle {
-            position: relative;
-            display: inline-block;
-            width: 51px;
-            height: 31px;
-        }
+        /* iOS Toggle Switch */
+        .toggle { position: relative; display: inline-block; width: 51px; height: 31px; }
         .toggle input { opacity: 0; width: 0; height: 0; }
         .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #E5E5EA;
-            transition: .4s;
-            border-radius: 34px;
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #E5E5EA; transition: .4s; border-radius: 34px;
         }
         .slider:before {
-            position: absolute;
-            content: "";
-            height: 27px; width: 27px;
-            left: 2px; bottom: 2px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px;
+            background-color: white; transition: .4s; border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         input:checked + .slider { background-color: var(--ios-green); }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -160,7 +103,7 @@
 <div class="container">
     <header>
         <h1>IVF Predictor</h1>
-        <p>Evidence-Based Model v1.2</p>
+        <p>EBM Model 2026.2</p>
     </header>
 
     <div class="card">
@@ -168,169 +111,136 @@
         <div class="grid-2">
             <div class="input-row">
                 <label>Věk ženy</label>
-                <input type="number" id="age" value="34" min="18" max="55" inputmode="numeric">
+                <input type="number" id="age" value="34">
             </div>
             <div class="input-row">
                 <label>AMH (ng/ml)</label>
-                <input type="number" id="amh" value="2.5" step="0.1" inputmode="decimal">
-            </div>
-        </div>
-        <div class="grid-2">
-            <div class="input-row">
-                <label>Výška (cm)</label>
-                <input type="number" id="height" value="168" inputmode="numeric">
-            </div>
-            <div class="input-row">
-                <label>Váha (kg)</label>
-                <input type="number" id="weight" value="65" inputmode="numeric">
+                <input type="number" id="amh" value="2.0" step="0.1">
             </div>
         </div>
     </div>
 
     <div class="card">
-        <h2>Léčebná strategie</h2>
+        <h2>Laboratoř & Metody</h2>
         <div class="switch-row">
-            <label>Darovaná vajíčka (DE)</label>
-            <label class="toggle">
-                <input type="checkbox" id="donor_eggs">
-                <span class="slider"></span>
-            </label>
+            <label>Darovaná vajíčka</label>
+            <label class="toggle"><input type="checkbox" id="donor"><span class="slider"></span></label>
         </div>
         <div class="switch-row">
-            <label>Metoda ICSI / PICSI</label>
-            <label class="toggle">
-                <input type="checkbox" id="icsi" checked>
-                <span class="slider"></span>
-            </label>
+            <label>Spermioselekce (ZyMōt)</label>
+            <label class="toggle"><input type="checkbox" id="zymot"><span class="slider"></span></label>
         </div>
         <div class="switch-row">
-            <label>Genetika embryí (PGT-A)</label>
-            <label class="toggle">
-                <input type="checkbox" id="pgta">
-                <span class="slider"></span>
-            </label>
+            <label>Genetika (PGT-A)</label>
+            <label class="toggle"><input type="checkbox" id="pgta"><span class="slider"></span></label>
         </div>
     </div>
 
     <div class="card">
-        <h2>Anamnéza a faktory</h2>
+        <h2>Faktory</h2>
         <div class="input-row">
-            <label>Příčina neplodnosti</label>
-            <select id="diagnosis">
-                <option value="1.0">Idiopatická / Neznámá</option>
-                <option value="0.8">Endometrióza (st. III/IV)</option>
+            <label>Diagnóza</label>
+            <select id="diag">
+                <option value="1.0">Idiopatická</option>
+                <option value="0.8">Endometrióza</option>
                 <option value="1.1">PCOS</option>
-                <option value="0.9">Nízká ovariální rezerva</option>
-                <option value="0.85">Závažný mužský faktor</option>
+                <option value="0.75">Těžký mužský faktor</option>
             </select>
         </div>
         <div class="switch-row">
-            <label>Aktivní kuřačka</label>
-            <label class="toggle">
-                <input type="checkbox" id="smoking">
-                <span class="slider"></span>
-            </label>
+            <label>Aktivní kouření</label>
+            <label class="toggle"><input type="checkbox" id="smoke"><span class="slider"></span></label>
         </div>
     </div>
 
-    <button onclick="calculateIVF()">Vypočítat šanci</button>
+    <button onclick="calculate()">Vypočítat šanci</button>
 
-    <div id="result">
-        <div class="card result-main">
-            <div class="badge" id="age_status">Vlastní vajíčka</div>
-            <h2>Šance na živé narození (1 cyklus)</h2>
-            <div class="big-number" id="res1">0%</div>
-            
-            <hr style="border: 0; border-top: 0.5px solid #E5E5EA; margin: 20px 0;">
-            
-            <h2>Kumulativní šance (3 cykly)</h2>
-            <div class="cumul-number" id="res3">0%</div>
-            <p id="insight" style="font-size: 14px; margin-top: 15px; color: #444;"></p>
-        </div>
-    </div>
-
-    <div class="disclaimer">
-        Tento model je matematickou simulací založenou na datech EBM (SART, HFEA). Skutečný výsledek závisí na individuální klinické situaci a kvalitě laboratoře.
+    <div id="result" class="card result-main">
+        <h2 id="status_label">Vlastní vajíčka</h2>
+        <div class="big-number" id="res1">0%</div>
+        <p style="font-size: 14px; color: var(--ios-gray);">Úspěšnost na 1 zahájený cyklus</p>
+        <hr style="border:0; border-top:0.5px solid #EEE; margin: 15px 0;">
+        <div class="cumul-box" id="res3">0%</div>
+        <p style="font-size: 14px; color: var(--ios-gray);">Kumulativní šance (3 cykly)</p>
+        <p id="advice" style="margin-top: 15px; font-size: 14px; line-height: 1.5;"></p>
     </div>
 </div>
 
 <script>
-    // Stejná logika jako v předchozí verzi
-    function calculateIVF() {
-        const age = parseInt(document.getElementById('age').value);
-        const amh = parseFloat(document.getElementById('amh').value);
-        const height = parseInt(document.getElementById('height').value);
-        const weight = parseInt(document.getElementById('weight').value);
-        const isDonor = document.getElementById('donor_eggs').checked;
-        const isIcsi = document.getElementById('icsi').checked;
-        const isPgta = document.getElementById('pgta').checked;
-        const isSmoking = document.getElementById('smoking').checked;
-        const diagnosis = parseFloat(document.getElementById('diagnosis').value);
+function calculate() {
+    const age = parseInt(document.getElementById('age').value);
+    const amh = parseFloat(document.getElementById('amh').value);
+    const isDonor = document.getElementById('donor').checked;
+    const isZymot = document.getElementById('zymot').checked;
+    const isPgta = document.getElementById('pgta').checked;
+    const isSmoke = document.getElementById('smoke').checked;
+    const diagVal = parseFloat(document.getElementById('diag').value);
 
-        if (!age || isNaN(age)) { alert("Vyplňte prosím věk."); return; }
-        if (!amh || isNaN(amh)) { alert("Vyplňte prosím AMH."); return; }
+    let chance = 0;
 
-        let baseChance = 0;
-        
-        if (isDonor) {
-            baseChance = 58;
-            document.getElementById('age_status').innerText = "Program s darovanými vajíčky";
-            document.getElementById('age_status').style.background = "#E1F5FE";
-        } else {
-            document.getElementById('age_status').innerText = "Vlastní vajíčka";
-            document.getElementById('age_status').style.background = "#E5E5EA";
-            if (age < 35) baseChance = 45;
-            else if (age < 38) baseChance = 35;
-            else if (age < 40) baseChance = 22;
-            else if (age < 42) baseChance = 12;
-            else if (age < 44) baseChance = 5;
-            else baseChance = 1.5;
-        }
-
-        let amhMod = 1.0;
-        if (!isDonor) {
-            if (amh < 0.8) amhMod = 0.7;
-            else if (amh > 3.5) amhMod = 1.1;
-        }
-
-        const bmi = weight / ((height/100) ** 2);
-        let bmiMod = 1.0;
-        if (bmi > 30) bmiMod = 0.9;
-        if (bmi > 35) bmiMod = 0.75;
-        if (bmi < 18.5) bmiMod = 0.9;
-
-        let lifestyleMod = isSmoking ? 0.65 : 1.0;
-        let techMod = 1.0;
-        
-        if (isIcsi) techMod *= 1.05;
-        if (isPgta && !isDonor && age > 35) techMod *= 1.25;
-
-        let final1 = baseChance * amhMod * bmiMod * diagnosis * lifestyleMod * techMod;
-        final1 = Math.min(final1, isDonor ? 65 : 60);
-        final1 = Math.max(final1, 0.5);
-
-        let p = final1 / 100;
-        let final3 = (1 - Math.pow(1 - p, 3)) * 100;
-
-        document.getElementById('result').style.display = 'block';
-        document.getElementById('res1').innerText = final1.toFixed(1) + "%";
-        document.getElementById('res3').innerText = Math.round(final3) + "%";
-
-        let insight = "";
-        if (isDonor) {
-            insight = "U darovaných vajíček je šance vysoká. Rozhodující je nyní příprava děložní sliznice.";
-        } else if (age > 42 && !isPgta) {
-            insight = "Vzhledem k věku je v tomto cyklu vysoké riziko aneuploidií. PGT-A může zvýšit šanci na úspěšný transfer.";
-        } else if (isSmoking) {
-            insight = "Kouření drasticky snižuje šanci. Okamžitá abstinence by prognózu výrazně zlepšila.";
-        } else {
-            insight = "Nezapomínejte, že úspěch IVF často vyžaduje více než jeden pokus.";
-        }
-        document.getElementById('insight').innerText = insight;
-
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    if (isDonor) {
+        // Darovaná vajíčka - vysoká šance nezávislá na věku matky
+        chance = 55;
+        document.getElementById('status_label').innerText = "Darovaná vajíčka";
+    } else {
+        document.getElementById('status_label').innerText = "Vlastní vajíčka";
+        // EBM Křivka: Agresivnější pokles po 34. roce
+        if (age < 30) chance = 52;
+        else if (age < 34) chance = 48;
+        else if (age == 34) chance = 42;
+        else if (age == 35) chance = 38;
+        else if (age == 36) chance = 32;
+        else if (age == 37) chance = 28;
+        else if (age == 38) chance = 22;
+        else if (age == 39) chance = 18;
+        else if (age == 40) chance = 12;
+        else if (age == 41) chance = 8;
+        else if (age == 42) chance = 4;
+        else if (age >= 43) chance = 2;
     }
-</script>
 
+    // AMH vliv (u vlastních vajíček)
+    if (!isDonor) {
+        if (amh < 0.5) chance *= 0.6;
+        else if (amh < 1.0) chance *= 0.85;
+        else if (amh > 3.0) chance *= 1.1;
+    }
+
+    // Zymot bonus - výraznější u mužského faktoru
+    if (isZymot) {
+        let zymotBonus = (diagVal < 1.0) ? 1.15 : 1.05;
+        chance *= zymotBonus;
+    }
+
+    // PGT-A bonus - klíčový u starších žen (nad 35)
+    if (isPgta && !isDonor) {
+        if (age > 40) chance *= 1.8; // U starších žen PGT-A dramaticky mění šanci na úspěšný transfer
+        else if (age > 35) chance *= 1.4;
+        else chance *= 1.1; // U mladých je vliv menší
+    }
+
+    // Kouření a Diagnóza
+    chance *= diagVal;
+    if (isSmoke) chance *= 0.7;
+
+    // Finální ošetření a výpočet kumulativní šance
+    let res1 = Math.min(Math.max(chance, 1), 65);
+    let p = res1 / 100;
+    let res3 = (1 - Math.pow(1 - p, 3)) * 100;
+
+    // UI
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('res1').innerText = res1.toFixed(1) + "%";
+    document.getElementById('res3').innerText = Math.round(res3) + "%";
+
+    let advice = "";
+    if (age >= 35 && !isPgta && !isDonor) advice = "Vzhledem k věku 35+ statistiky EBM doporučují PGT-A pro zkrácení doby k otěhotnění.";
+    if (isZymot && diagVal < 1.0) advice = "Metoda ZyMōt je u mužského faktoru výbornou volbou pro eliminaci fragmentace DNA.";
+    if (isDonor) advice = "Program DE eliminuje vliv věku pacientky a dosahuje nejvyšších kumulativních úspěchů.";
+    document.getElementById('advice').innerText = advice;
+
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+</script>
 </body>
 </html>
