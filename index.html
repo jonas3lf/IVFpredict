@@ -58,7 +58,7 @@
             -webkit-appearance: none;
         }
 
-        /* OPRAVENÉ PŘEPÍNAČE */
+        /* TOGGLES & SWITCHES */
         .toggle-row {
             display: flex;
             justify-content: space-between;
@@ -90,6 +90,11 @@
             border-radius: 14px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px;
         }
 
+        /* AMH UNIT SELECTOR */
+        .amh-flex { display: flex; gap: 8px; }
+        .amh-flex input { flex: 2; }
+        .amh-flex select { flex: 1; min-width: 90px; }
+
         #result { display: none; animation: fadeIn 0.5s ease; }
         .stat-header { text-align: center; margin-bottom: 10px; }
         .chance-val { font-size: 60px; font-weight: 800; color: var(--clinic-blue); margin: 5px 0; }
@@ -108,7 +113,6 @@
             background: #F5F5F7; padding: 15px; border-radius: 12px; font-size: 14px; line-height: 1.5;
             color: #333; margin-top: 20px; border-left: 4px solid var(--clinic-blue);
         }
-        .advice-box p { margin: 0 0 8px 0; }
         
         footer { margin-top: 40px; text-align: center; padding: 0 15px; }
         footer p { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
@@ -116,7 +120,7 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body>
+<body onload="updateAverageAMH()">
 
 <div class="container">
     <header>
@@ -127,12 +131,30 @@
     <div class="card">
         <h2>Základní parametry</h2>
         <div class="grid">
-            <div class="input-group"><label>Věk ženy</label><input type="number" id="age" value="35"></div>
-            <div class="input-group"><label>Věk partnera</label><input type="number" id="age_man" value="37"></div>
+            <div class="input-group">
+                <label>Věk ženy</label>
+                <input type="number" id="age" value="35" oninput="updateAverageAMH()">
+            </div>
+            <div class="input-group">
+                <label>Věk partnera</label>
+                <input type="number" id="age_man" value="37">
+            </div>
         </div>
         <div class="grid">
-            <div class="input-group"><label>AMH (ng/ml)</label><input type="number" id="amh" placeholder="Volitelné" step="0.1"></div>
-            <div class="input-group"><label>AFC (počet)</label><input type="number" id="afc" placeholder="Volitelné"></div>
+            <div class="input-group">
+                <label>AMH (Ovariální rezerva)</label>
+                <div class="amh-flex">
+                    <input type="number" id="amh" step="0.1" placeholder="Typické: 2.0">
+                    <select id="amh_unit">
+                        <option value="ng">ng/ml</option>
+                        <option value="nmol">nmol/l</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group">
+                <label>AFC (počet folikulů)</label>
+                <input type="number" id="afc" placeholder="Volitelné">
+            </div>
         </div>
         <div class="grid">
             <div class="input-group"><label>Výška (cm)</label><input type="number" id="height" value="168"></div>
@@ -238,15 +260,38 @@
 </div>
 
 <script>
+// Funkce pro automatické dosazení průměrného AMH dle věku
+function updateAverageAMH() {
+    const age = parseInt(document.getElementById('age').value);
+    const unit = document.getElementById('amh_unit').value;
+    const amhField = document.getElementById('amh');
+    
+    if (!age) return;
+
+    // Lineární odhad průměrného AMH (ng/ml): 25 let ~ 3.5, 35 let ~ 2.0, 45 let ~ 0.3
+    let avgNg = 3.5 - ((age - 25) * 0.16);
+    avgNg = Math.max(0.2, Math.min(4.5, avgNg));
+
+    if (unit === 'nmol') {
+        amhField.value = (avgNg * 7.14).toFixed(1);
+    } else {
+        amhField.value = avgNg.toFixed(1);
+    }
+}
+
 function calculate() {
     const age = parseInt(document.getElementById('age').value);
     const ageM = parseInt(document.getElementById('age_man').value);
-    const amhRaw = document.getElementById('amh').value;
+    const amhInput = parseFloat(document.getElementById('amh').value);
+    const amhUnit = document.getElementById('amh_unit').value;
     const afcRaw = document.getElementById('afc').value;
     const height = parseInt(document.getElementById('height').value);
     const weight = parseInt(document.getElementById('weight').value);
     
-    const amh = amhRaw ? parseFloat(amhRaw) : null;
+    // Převod AMH na ng/ml pro výpočet
+    let amh = amhInput;
+    if (amhUnit === 'nmol') { amh = amhInput / 7.14; }
+
     const afc = afcRaw ? parseInt(afcRaw) : null;
     const isPcos = document.getElementById('diag_pcos').checked;
     const isEndo = document.getElementById('diag_endo').checked;
@@ -258,23 +303,17 @@ function calculate() {
 
     const bmi = weight / ((height/100)**2);
 
+    // 1. Zisk vajíček
     let predictedEggs = 0;
-    let dataQuality = "full";
-
     if (amh !== null && afc !== null) {
         predictedEggs = (amh * 5.3 * 0.4) + (afc * 0.82 * 0.6);
     } else if (amh !== null) {
         predictedEggs = amh * 5.3;
-        dataQuality = "partial-amh";
-    } else if (afc !== null) {
-        predictedEggs = afc * 0.82;
-        dataQuality = "partial-afc";
     } else {
-        dataQuality = "poor";
-        let ageBasedAFC = (age < 35) ? 15 : (age < 40 ? 10 : 5);
-        predictedEggs = ageBasedAFC * 0.8;
+        predictedEggs = (afc || 10) * 0.82;
     }
 
+    // Korekce
     if (age < 32) predictedEggs *= 1.1;
     if (age > 40) predictedEggs *= 0.85;
     if (isPcos) predictedEggs *= 1.25;
@@ -283,6 +322,7 @@ function calculate() {
     predictedEggs *= prevPenalty;
     predictedEggs = Math.min(Math.max(predictedEggs, 0.5), 35);
 
+    // 2. Blastocysty
     let blastRate = isIcsi ? 0.28 : 0.24; 
     if (isMale) blastRate *= isIcsi ? (isZymot ? 1.0 : 0.82) : 0.45;
     if (isZymot) blastRate *= 1.15; 
@@ -290,6 +330,7 @@ function calculate() {
     if (ageM > 45) blastRate *= 0.90;
     let blasts = predictedEggs * blastRate;
 
+    // 3. Euploidie
     let euRate = 0.65;
     if (age > 34 && age <= 37) euRate = 0.50;
     else if (age > 37 && age <= 39) euRate = 0.35;
@@ -301,6 +342,7 @@ function calculate() {
     let euFinal = blasts * euRate;
     let prob1 = (1 - Math.exp(-euFinal)) * 100;
 
+    // UI Rendering
     document.getElementById('result').style.display = 'block';
     document.getElementById('res_perc').innerText = Math.round(Math.min(prob1, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
@@ -320,15 +362,13 @@ function calculate() {
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
+    // INTERPRETACE
     let adv = `<strong>Klinická interpretace:</strong><br><br>`;
-    if (dataQuality === "poor") {
-        adv += `<p style="color:var(--danger); font-weight:600;">⚠️ POZOR: Výpočet bez AMH/AFC je pouze hrubý statistický odhad.</p>`;
-    }
-    adv += `<p>• <strong>Věk (${age} let):</strong> Šance na zdravé embryo je ${Math.round(euRate*100)} %.</p>`;
-    if (isEndo) adv += `<p>• <strong>Endometrióza:</strong> Snižuje ovariální rezervu a zisk vajíček.</p>`;
-    if (bmi > 30) adv += `<p>• <strong>Obezita (BMI ${bmi.toFixed(1)}):</strong> Snižuje efektivitu stimulace.</p>`;
-    if (isMale && isZymot) adv += `<p>• <strong>ZyMōt:</strong> Zvyšuje kvalitu selekce spermií pro oplození.</p>`;
-    if (euFinal < 0.8) adv += `<p style="color:var(--warning); font-weight:600;">➔ Doporučení: Predikce pod 1.0 embryo – zvažte kumulaci odběrů.</p>`;
+    adv += `<p>• <strong>Věk (${age} let):</strong> Šance, že embryo bude geneticky v pořádku, je cca ${Math.round(euRate*100)} %.</p>`;
+    if (isEndo) adv += `<p>• <strong>Endometrióza:</strong> Může snižovat kvalitu a počet získaných oocytů.</p>`;
+    if (bmi > 30) adv += `<p>• <strong>BMI (${bmi.toFixed(1)}):</strong> Vyšší váha snižuje výtěžnost stimulace o cca 12 %.</p>`;
+    if (isMale) adv += `<p>• <strong>Male faktor:</strong> ICSI a ZyMōt pomáhají dosáhnout optimální blastulace.</p>`;
+    if (euFinal < 0.8) adv += `<p style="color:var(--warning); font-weight:600;">➔ Doporučení: Predikce indikuje zisk nižší než 1 zdravé embryo. Doporučujeme diskuzi o kumulaci (poolingu).</p>`;
 
     document.getElementById('advice').innerHTML = adv;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
