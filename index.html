@@ -58,7 +58,7 @@
             -webkit-appearance: none;
         }
 
-        /* TOGGLES */
+        /* OPRAVENÉ PŘEPÍNAČE */
         .toggle-row {
             display: flex;
             justify-content: space-between;
@@ -110,7 +110,7 @@
         }
         .advice-box p { margin: 0 0 8px 0; }
         
-        footer { margin-top: 40px; text-align: center; padding: 0 10px; }
+        footer { margin-top: 40px; text-align: center; padding: 0 15px; }
         footer p { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -229,7 +229,11 @@
     </div>
 
     <footer>
-        <p><strong>Poznámka:</strong> Odhad založený na statistických datech. Biologie je individuální, výsledek není garantován. Konzultujte kroky s lékařem.</p>
+        <p>
+            <strong>Poznámka:</strong> Tato aplikace slouží pro informativní účely a generuje odhad založený na průměrných statistických datech. 
+            Biologický proces je individuální a skutečný výsledek stimulace i embryologické fáze se může od predikce významně lišit. 
+            Výsledky nejsou v žádném případě garantovány. Všechny kroky konzultujte s lékařem.
+        </p>
     </footer>
 </div>
 
@@ -254,35 +258,23 @@ function calculate() {
 
     const bmi = weight / ((height/100)**2);
 
-    // 1. STANOVENÍ OVARIALNÍ REZERVY (PREDIKCE MII OOCYTŮ)
     let predictedEggs = 0;
-    let dataQuality = "full"; // full, partial, poor
+    let dataQuality = "full";
 
     if (amh !== null && afc !== null) {
-        // Kombinovaný model (nejpřesnější)
         predictedEggs = (amh * 5.3 * 0.4) + (afc * 0.82 * 0.6);
     } else if (amh !== null) {
-        // Pouze AMH
         predictedEggs = amh * 5.3;
         dataQuality = "partial-amh";
     } else if (afc !== null) {
-        // Pouze AFC
         predictedEggs = afc * 0.82;
         dataQuality = "partial-afc";
     } else {
-        // Slepý odhad podle věku (Age-based fallback)
         dataQuality = "poor";
-        let ageBasedAFC = 15;
-        if (age < 30) ageBasedAFC = 18;
-        else if (age < 35) ageBasedAFC = 14;
-        else if (age < 38) ageBasedAFC = 10;
-        else if (age < 41) ageBasedAFC = 6;
-        else if (age < 44) ageBasedAFC = 4;
-        else ageBasedAFC = 2;
+        let ageBasedAFC = (age < 35) ? 15 : (age < 40 ? 10 : 5);
         predictedEggs = ageBasedAFC * 0.8;
     }
 
-    // Korekce zisku
     if (age < 32) predictedEggs *= 1.1;
     if (age > 40) predictedEggs *= 0.85;
     if (isPcos) predictedEggs *= 1.25;
@@ -291,7 +283,6 @@ function calculate() {
     predictedEggs *= prevPenalty;
     predictedEggs = Math.min(Math.max(predictedEggs, 0.5), 35);
 
-    // 2. BLASTOCYSTY
     let blastRate = isIcsi ? 0.28 : 0.24; 
     if (isMale) blastRate *= isIcsi ? (isZymot ? 1.0 : 0.82) : 0.45;
     if (isZymot) blastRate *= 1.15; 
@@ -299,7 +290,6 @@ function calculate() {
     if (ageM > 45) blastRate *= 0.90;
     let blasts = predictedEggs * blastRate;
 
-    // 3. EUPLOIDIE
     let euRate = 0.65;
     if (age > 34 && age <= 37) euRate = 0.50;
     else if (age > 37 && age <= 39) euRate = 0.35;
@@ -311,7 +301,6 @@ function calculate() {
     let euFinal = blasts * euRate;
     let prob1 = (1 - Math.exp(-euFinal)) * 100;
 
-    // UI UPDATE
     document.getElementById('result').style.display = 'block';
     document.getElementById('res_perc').innerText = Math.round(Math.min(prob1, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
@@ -331,19 +320,15 @@ function calculate() {
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
-    // DYNAMICKÁ KLINICKÁ ÚVAHA
     let adv = `<strong>Klinická interpretace:</strong><br><br>`;
-    
     if (dataQuality === "poor") {
-        adv += `<p style="color:var(--danger); font-weight:600;">⚠️ POZOR: Výpočet běží bez znalosti AMH i AFC. Výsledek je pouze hrubým statistickým odhadem pro věk ${age} let a může se zásadně lišit od reality.</p>`;
-    } else if (dataQuality.startsWith("partial")) {
-        adv += `<p style="color:var(--warning);">💡 Poznámka: Model postrádá ${dataQuality.includes("amh") ? "AFC" : "AMH"}. Přesnost predikce je snížena.</p>`;
+        adv += `<p style="color:var(--danger); font-weight:600;">⚠️ POZOR: Výpočet bez AMH/AFC je pouze hrubý statistický odhad.</p>`;
     }
-
-    adv += `<p>• <strong>Věk (${age} let):</strong> Genetická kvalita je hlavním limitujícím faktorem (euploidie ${Math.round(euRate*100)} %). </p>`;
-    if (isEndo) adv += `<p>• <strong>Endometrióza:</strong> Negativní vliv na kvantitu i kvalitu vajíček.</p>`;
-    if (bmi > 30) adv += `<p>• <strong>BMI (${bmi.toFixed(1)}):</strong> Významně snižuje efektivitu stimulace.</p>`;
-    if (isMale && isZymot) adv += `<p>• <strong>ZyMōt:</strong> Pomáhá kompenzovat mužský faktor selekcí spermií.</p>`;
+    adv += `<p>• <strong>Věk (${age} let):</strong> Šance na zdravé embryo je ${Math.round(euRate*100)} %.</p>`;
+    if (isEndo) adv += `<p>• <strong>Endometrióza:</strong> Snižuje ovariální rezervu a zisk vajíček.</p>`;
+    if (bmi > 30) adv += `<p>• <strong>Obezita (BMI ${bmi.toFixed(1)}):</strong> Snižuje efektivitu stimulace.</p>`;
+    if (isMale && isZymot) adv += `<p>• <strong>ZyMōt:</strong> Zvyšuje kvalitu selekce spermií pro oplození.</p>`;
+    if (euFinal < 0.8) adv += `<p style="color:var(--warning); font-weight:600;">➔ Doporučení: Predikce pod 1.0 embryo – zvažte kumulaci odběrů.</p>`;
 
     document.getElementById('advice').innerHTML = adv;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
