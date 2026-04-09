@@ -17,6 +17,7 @@
             --text-main: #1D1D1F;
             --text-secondary: #86868B;
             --success: #34C759;
+            --warning: #FF9500;
         }
 
         body {
@@ -59,7 +60,7 @@
             -webkit-appearance: none;
         }
 
-        /* OPRAVENÉ PŘEPÍNAČE - FIXNÍ KONTEJNER */
+        /* FIXNÍ PŘEPÍNAČE */
         .toggle-row {
             display: flex;
             justify-content: space-between;
@@ -70,20 +71,13 @@
         .toggle-row:last-child { border-bottom: none; }
         .toggle-row label { cursor: pointer; font-weight: 500; font-size: 15px; margin-right: 10px; }
 
-        /* Tento blok zajistí, že switch bude mít vždy 51x31 a nic víc */
         .switch-container {
             width: 51px;
             height: 31px;
             flex-shrink: 0;
             position: relative;
         }
-
-        .switch-container input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
+        .switch-container input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute;
             cursor: pointer;
@@ -92,27 +86,18 @@
             transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 31px;
         }
-
         .slider:before {
             position: absolute;
             content: "";
-            height: 27px;
-            width: 27px;
-            left: 2px;
-            bottom: 2px;
+            height: 27px; width: 27px;
+            left: 2px; bottom: 2px;
             background-color: white;
             transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 50%;
             box-shadow: 0 3px 8px rgba(0,0,0,0.15);
         }
-
-        input:checked + .slider {
-            background-color: var(--success);
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(20px);
-        }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(20px); }
 
         button {
             width: 100%;
@@ -125,13 +110,28 @@
             font-weight: 600;
             cursor: pointer;
             margin-top: 10px;
-            -webkit-tap-highlight-color: transparent;
         }
 
         #result { display: none; animation: fadeIn 0.5s ease; }
-        .stat-header { text-align: center; margin-bottom: 20px; }
+        .stat-header { text-align: center; margin-bottom: 10px; }
         .chance-val { font-size: 60px; font-weight: 800; color: var(--clinic-blue); margin: 5px 0; }
         
+        /* Multi-cycle section */
+        .multi-cycle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .multi-box {
+            background: #F2F8FF;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .multi-box span { font-size: 11px; color: var(--clinic-blue); font-weight: 700; text-transform: uppercase; }
+        .multi-box div { font-size: 20px; font-weight: 700; color: #1D1D1F; }
+
         .bar-container { margin-bottom: 15px; }
         .bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
         .bar-outer { background: #E5E5EA; height: 6px; border-radius: 3px; }
@@ -142,11 +142,13 @@
             padding: 15px;
             border-radius: 12px;
             font-size: 14px;
-            line-height: 1.4;
+            line-height: 1.5;
             color: #333;
             margin-top: 20px;
             border-left: 4px solid var(--clinic-blue);
         }
+        .advice-box p { margin: 0 0 8px 0; }
+        .advice-box p:last-child { margin-bottom: 0; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -178,7 +180,7 @@
     <div class="card">
         <h2>Klinické faktory & Diagnózy</h2>
         <div class="toggle-row">
-            <label for="diag_pcos">PCOS</label>
+            <label for="diag_pcos">PCOS (Syndrom polycyst. ovárií)</label>
             <div class="switch-container">
                 <input type="checkbox" id="diag_pcos">
                 <div class="slider" onclick="document.getElementById('diag_pcos').click()"></div>
@@ -244,9 +246,13 @@
 
     <div id="result">
         <div class="card stat-header">
-            <h2>Šance na zisk euploidního embrya</h2>
+            <h2>Šance na euploidní embryo (1 cyklus)</h2>
             <div class="chance-val" id="res_perc">0%</div>
-            <span style="font-size: 13px; color: var(--text-secondary);">odhad na jeden odběr (OPU)</span>
+            
+            <div id="multi_results" class="multi-cycle" style="display:none;">
+                <div class="multi-box"><span>Při 2 cyklech</span><div id="prob_2">0%</div></div>
+                <div class="multi-box"><span>Při 3 cyklech</span><div id="prob_3">0%</div></div>
+            </div>
         </div>
 
         <div class="card">
@@ -290,26 +296,20 @@ function calculate() {
 
     const bmi = weight / ((height/100)**2);
 
-    // 1. Zisk vajíček (MII) - Kompromis 5.3
+    // 1. Zisk vajíček (MII)
     let baseMultiplier = 5.3;
     if (age < 32) baseMultiplier = 5.8;
     if (age > 40) baseMultiplier = 4.4;
 
     let predictedEggs = amh * baseMultiplier;
-    
-    if (afc > 0) {
-        let eggsFromAFC = afc * 0.82;
-        predictedEggs = (predictedEggs * 0.4) + (eggsFromAFC * 0.6);
-    }
+    if (afc > 0) predictedEggs = (predictedEggs * 0.4) + (afc * 0.82 * 0.6);
 
+    // Modifikátory zisku
     if (isPcos) predictedEggs *= 1.25;
     if (isEndo) predictedEggs *= 0.82;
     if (isDor) predictedEggs *= 0.85;
     if (bmi > 30) predictedEggs *= 0.88;
-    
-    // Progresivní penalizace za neúspěchy (aplikováno na počet vajíček)
     predictedEggs *= prevPenalty;
-
     predictedEggs = Math.min(Math.max(predictedEggs, 0.5), 35);
 
     // 2. Blastocysty
@@ -320,8 +320,8 @@ function calculate() {
         blastRate *= malePenalty;
     }
     if (isZymot) blastRate *= 1.15; 
-    if (ageM > 45) blastRate *= 0.90;
     if (isSmoke) blastRate *= 0.78;
+    if (ageM > 45) blastRate *= 0.90;
 
     let blasts = predictedEggs * blastRate;
 
@@ -337,27 +337,56 @@ function calculate() {
     if (isEndo) euRate *= 0.92;
 
     let euFinal = blasts * euRate;
-    let prob = (1 - Math.exp(-euFinal)) * 100;
+    let prob1 = (1 - Math.exp(-euFinal)) * 100;
 
-    // UI
+    // UI Render
     document.getElementById('result').style.display = 'block';
-    document.getElementById('res_perc').innerText = Math.round(Math.min(prob, 96)) + "%";
+    document.getElementById('res_perc').innerText = Math.round(Math.min(prob1, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
     document.getElementById('val_blasts').innerText = blasts.toFixed(1);
     document.getElementById('val_eu').innerText = euFinal.toFixed(1);
 
+    // Kumulativní šance (pokud je euFinal < 1.0)
+    const multiResults = document.getElementById('multi_results');
+    if (euFinal < 1.0) {
+        multiResults.style.display = 'grid';
+        let prob2 = (1 - Math.exp(-2 * euFinal)) * 100;
+        let prob3 = (1 - Math.exp(-3 * euFinal)) * 100;
+        document.getElementById('prob_2').innerText = Math.round(Math.min(prob2, 98)) + "%";
+        document.getElementById('prob_3').innerText = Math.round(Math.min(prob3, 99)) + "%";
+    } else {
+        multiResults.style.display = 'none';
+    }
+
     setTimeout(() => {
         document.getElementById('bar_eggs').style.width = "95%";
-        document.getElementById('bar_blasts').style.width = Math.min((blasts / predictedEggs) * 300, 100) + "%";
+        document.getElementById('bar_blasts').style.width = Math.min((blasts / predictedEggs) * 350, 100) + "%";
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
-    let advice = `<strong>Klinická úvaha:</strong> `;
-    if (prevPenalty < 1.0) advice += `Předchozí neúspěchy jsou silným prediktorem nižšího výtěžku. `;
-    if (isEndo) advice += "Endometrióza může vyžadovat specifickou stimulaci. ";
-    if (isMale && !isIcsi) advice += "Bez ICSI je u mužského faktoru vysoké riziko totálního selhání oplození. ";
+    // KOMPLEXNÍ KLINICKÁ ÚVAHA
+    let adviceHtml = `<strong>Klinická interpretace faktorů:</strong><br><br>`;
     
-    document.getElementById('advice').innerHTML = advice;
+    // Věk a genetika
+    adviceHtml += `<p>• <strong>Věk (${age} let):</strong> Hlavní faktor určující euploidii (${Math.round(euRate*100)} %). </p>`;
+    
+    // Ovariální rezerva a zisk
+    if (isEndo) adviceHtml += `<p>• <strong>Endometrióza:</strong> Snižuje výtěžnost oocytů o cca 18 % a mírně ovlivňuje jejich kvalitu. </p>`;
+    if (isPcos) adviceHtml += `<p>• <strong>PCOS:</strong> Očekáváme vysoký zisk vajíček, ale s rizikem vyššího podílu nezralých oocytů. </p>`;
+    if (bmi > 25) adviceHtml += `<p>• <strong>BMI (${bmi.toFixed(1)}):</strong> ${bmi > 30 ? 'Obezita' : 'Nadváha'} snižuje ovariální odpověď na stimulaci. </p>`;
+    if (prevPenalty < 1.0) adviceHtml += `<p>• <strong>Historie:</strong> Předchozí neúspěchy naznačují nutnost úpravy stimulačního protokolu. </p>`;
+
+    // Laboratoř a Male faktor
+    if (isMale) {
+        adviceHtml += `<p>• <strong>Male faktor:</strong> ${isIcsi ? 'Korigován metodou ICSI' : 'Riziko selhání oplození bez ICSI'}. </p>`;
+    }
+    if (isZymot) adviceHtml += `<p>• <strong>ZyMōt:</strong> Zvyšuje šanci na blastulaci selekcí spermií s nízkou fragmentací DNA. </p>`;
+    if (isSmoke) adviceHtml += `<p>• <strong>Kouření:</strong> Výrazně snižuje celkovou metabolickou šanci embryí na dosažení blastocysty. </p>`;
+
+    // Závěr
+    if (euFinal < 0.7) adviceHtml += `<p style="color:var(--warning); font-weight:600;">➔ Doporučení: Vzhledem k predikci pod 1.0 euploidní embryo je vhodné zvážit kumulaci embryí (pooling).</p>`;
+
+    document.getElementById('advice').innerHTML = adviceHtml;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 </script>
