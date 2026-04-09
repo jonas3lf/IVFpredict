@@ -59,42 +59,37 @@
         }
 
         .toggle-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 0.5px solid #F5F5F7;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 0.5px solid #F5F5F7;
         }
         .toggle-row:last-child { border-bottom: none; }
-        .toggle-row label { cursor: pointer; font-weight: 500; font-size: 15px; margin-right: 10px; flex-grow: 1; }
+        .toggle-row label { cursor: pointer; font-weight: 500; font-size: 15px; flex-grow: 1; }
 
-        .switch-container {
-            width: 51px; height: 31px; flex-shrink: 0; position: relative;
-        }
+        .switch-container { width: 51px; height: 31px; position: relative; }
         .switch-container input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #E5E5EA; transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 31px;
+            background-color: #E5E5EA; transition: .3s; border-radius: 31px;
         }
         .slider:before {
             position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px;
-            background-color: white; transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 50%;
+            background-color: white; transition: .3s; border-radius: 50%;
             box-shadow: 0 3px 8px rgba(0,0,0,0.15);
         }
         input:checked + .slider { background-color: var(--success); }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        .amh-flex { display: flex; gap: 8px; }
+        .amh-flex input { flex: 2; }
+        .amh-flex select { flex: 1; min-width: 90px; }
 
         button {
             width: 100%; padding: 18px; background: #000; color: white; border: none;
             border-radius: 14px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px;
         }
 
-        .amh-flex { display: flex; gap: 8px; }
-        .amh-flex input { flex: 2; }
-        .amh-flex select { flex: 1; min-width: 90px; }
-
         #result { display: none; animation: fadeIn 0.5s ease; }
-        .stat-header { text-align: center; margin-bottom: 10px; }
+        .stat-header { text-align: center; }
         .chance-val { font-size: 60px; font-weight: 800; color: var(--clinic-blue); margin: 5px 0; }
         
         .multi-cycle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
@@ -130,7 +125,7 @@
         <h2>Základní parametry</h2>
         <div class="grid">
             <div class="input-group">
-                <label>Věk ženy</label>
+                <label>Věk ženy (max 49)</label>
                 <input type="number" id="age" value="35" oninput="updateAverageAMH()">
             </div>
             <div class="input-group">
@@ -140,7 +135,7 @@
         </div>
         <div class="grid">
             <div class="input-group">
-                <label>AMH (Ovariální rezerva)</label>
+                <label>AMH (max 19.9 ng/ml)</label>
                 <div class="amh-flex">
                     <input type="number" id="amh" step="0.1">
                     <select id="amh_unit" onchange="updateAverageAMH()">
@@ -259,25 +254,36 @@
 
 <script>
 function updateAverageAMH() {
-    const age = parseInt(document.getElementById('age').value);
+    let age = parseInt(document.getElementById('age').value);
     const unit = document.getElementById('amh_unit').value;
     const amhField = document.getElementById('amh');
+    
     if (!age) return;
+    if (age > 49) age = 49; // Strop pro věk v predikci AMH
+
     let avgNg = 3.5 - ((age - 25) * 0.16);
     avgNg = Math.max(0.2, Math.min(4.5, avgNg));
+    
     amhField.value = unit === 'nmol' ? (avgNg * 7.14).toFixed(1) : avgNg.toFixed(1);
 }
 
 function calculate() {
-    const age = parseInt(document.getElementById('age').value);
+    // VSTUPNÍ VALIDACE A ZASTROPOVÁNÍ
+    let age = parseInt(document.getElementById('age').value);
+    if (age > 49) age = 49;
+    
     const ageM = parseInt(document.getElementById('age_man').value);
-    const amhInput = parseFloat(document.getElementById('amh').value);
+    let amhInput = parseFloat(document.getElementById('amh').value);
     const amhUnit = document.getElementById('amh_unit').value;
+    
+    // Přepočet a zastropování AMH na 19.9 ng/ml
+    let amh = amhUnit === 'nmol' ? amhInput / 7.14 : amhInput;
+    if (amh > 19.9) amh = 19.9;
+
     const afcRaw = document.getElementById('afc').value;
     const height = parseInt(document.getElementById('height').value);
     const weight = parseInt(document.getElementById('weight').value);
     
-    let amh = amhUnit === 'nmol' ? amhInput / 7.14 : amhInput;
     const afc = afcRaw ? parseInt(afcRaw) : null;
     const isPcos = document.getElementById('diag_pcos').checked;
     const isEndo = document.getElementById('diag_endo').checked;
@@ -289,34 +295,41 @@ function calculate() {
 
     const bmi = weight / ((height/100)**2);
 
-    // DYNAMICKÁ PENALIZACE BMI
-    let bmiPenalty = 1.0;
-    let bmiCategory = "norma";
-    if (bmi >= 25 && bmi < 30) { bmiPenalty = 0.95; bmiCategory = "nadváha"; }
-    else if (bmi >= 30 && bmi < 35) { bmiPenalty = 0.88; bmiCategory = "obezita1"; }
-    else if (bmi >= 35 && bmi < 40) { bmiPenalty = 0.80; bmiCategory = "obezita2"; }
-    else if (bmi >= 40) { bmiPenalty = 0.65; bmiCategory = "obezita3"; }
+    // 1. ZISK OOCYTŮ (Saturace nad 4 ng/ml)
+    let effectiveAmh = amh;
+    if (amh > 4) {
+        effectiveAmh = 4 + Math.log10(amh - 3); 
+    }
 
-    let predictedEggs = (amh !== null && afc !== null) ? (amh * 5.3 * 0.4) + (afc * 0.82 * 0.6) : (amh !== null ? amh * 5.3 : (afc || 10) * 0.82);
+    let baseEggs = (amh !== null && afc !== null) ? (effectiveAmh * 5.3 * 0.4) + (afc * 0.82 * 0.6) : (amh !== null ? effectiveAmh * 5.3 : (afc || 10) * 0.82);
 
+    let predictedEggs = baseEggs;
     if (age < 32) predictedEggs *= 1.1;
     if (age > 40) predictedEggs *= 0.85;
-    if (isPcos) predictedEggs *= 1.25;
+    if (isPcos) predictedEggs *= 1.15;
     if (isEndo) predictedEggs *= 0.82;
-    
-    // Aplikace dynamické BMI penalizace
+
+    // BMI Penalizace
+    let bmiPenalty = 1.0;
+    if (bmi >= 30 && bmi < 35) bmiPenalty = 0.88;
+    else if (bmi >= 35 && bmi < 40) bmiPenalty = 0.80;
+    else if (bmi >= 40) bmiPenalty = 0.65;
     predictedEggs *= bmiPenalty;
     
     predictedEggs *= prevPenalty;
     predictedEggs = Math.min(Math.max(predictedEggs, 0.5), 35);
 
+    // 2. BLASTOCYSTY
     let blastRate = isIcsi ? 0.28 : 0.24; 
     if (isMale) blastRate *= isIcsi ? (isZymot ? 1.0 : 0.82) : 0.45;
     if (isZymot) blastRate *= 1.15; 
     if (isSmoke) blastRate *= 0.78;
     if (ageM > 45) blastRate *= 0.90;
+    if (predictedEggs > 20) blastRate *= 0.90;
+
     let blasts = predictedEggs * blastRate;
 
+    // 3. EUPLOIDIE
     let euRate = 0.65;
     if (age > 34 && age <= 37) euRate = 0.50;
     else if (age > 37 && age <= 39) euRate = 0.35;
@@ -328,6 +341,7 @@ function calculate() {
     let euFinal = blasts * euRate;
     let prob1 = (1 - Math.exp(-euFinal)) * 100;
 
+    // UI Rendering
     document.getElementById('result').style.display = 'block';
     document.getElementById('res_perc').innerText = Math.round(Math.min(prob1, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
@@ -347,18 +361,14 @@ function calculate() {
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
+    // INTERPRETACE
     let adv = `<strong>Klinická interpretace:</strong><br><br>`;
-    adv += `<p>• <strong>Věk (${age} let):</strong> Primární faktor kvality. Očekávaná euploidie oocytů je ${Math.round(euRate*100)} %.</p>`;
+    if (parseInt(document.getElementById('age').value) > 49) adv += `<p style="color:var(--danger);">⚠️ Věk nad 49 let: Model počítá s hraniční hodnotou 49 let.</p>`;
+    if (amhInput > 19.9 && amhUnit === 'ng') adv += `<p style="color:var(--danger);">⚠️ AMH omezeno na 19.9 ng/ml pro zachování klinické logiky.</p>`;
     
-    // Specifické BMI varování
-    if (bmiCategory === "obezita1") adv += `<p>• <strong>Obezita I. st. (BMI ${bmi.toFixed(1)}):</strong> Snižuje výtěžnost o cca 12 % z důvodu horší odpovědi na stimulaci.</p>`;
-    else if (bmiCategory === "obezita2") adv += `<p style="color:var(--warning);">• <strong>Obezita II. st. (BMI ${bmi.toFixed(1)}):</strong> Výrazné snížení výtěžnosti (-20 %) a riziko horší kvality oocytů.</p>`;
-    else if (bmiCategory === "obezita3") adv += `<p style="color:var(--danger); font-weight:700;">• <strong>Morbidní obezita (BMI ${bmi.toFixed(1)}):</strong> Kritický vliv na stimulaci (-35 %) a technická náročnost odběru.</p>`;
-    
-    if (isEndo) adv += `<p>• <strong>Endometrióza:</strong> Často spojena s nižším počtem získaných vajíček.</p>`;
-    if (isMale) adv += `<p>• <strong>Male faktor:</strong> ICSI a ZyMōt jsou klíčové pro optimalizaci vývoje blastocyst.</p>`;
-    
-    if (euFinal < 0.8) adv += `<p style="color:var(--warning); font-weight:600;">➔ Doporučení: Nízký předpokládaný zisk. Vhodné zvážit kumulaci embryí (pooling).</p>`;
+    adv += `<p>• <strong>Věk (${age} let):</strong> Šance na euploidní embryo je ${Math.round(euRate*100)} %.</p>`;
+    if (bmi >= 30) adv += `<p>• <strong>BMI:</strong> Snížená citlivost na stimulaci z důvodu vyšší hmotnosti.</p>`;
+    if (isPcos) adv += `<p>• <strong>PCOS:</strong> Vyšší kvantita, ale riziko nižší vyzrálosti při extrémním zisku.</p>`;
 
     document.getElementById('advice').innerHTML = adv;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
