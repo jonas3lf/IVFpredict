@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>IVF Predictor EBM</title>
-    <link rel="apple-touch-icon" href="icon.png">
+    <title>IVF Euploidy Predictor</title>
+    
+    <link rel="apple-touch-icon" href="icon3.PNG">
 
     <style>
         :root {
             --ios-blue: #007AFF;
-            --ios-green: #34C759;
+            --ios-purple: #5856D6;
             --ios-bg: #F2F2F7;
             --ios-card: #FFFFFF;
             --ios-gray: #8E8E93;
@@ -27,7 +28,7 @@
 
         .container { max-width: 550px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 25px; }
-        header h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+        header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; color: var(--ios-purple); }
         
         .card {
             background: var(--ios-card);
@@ -66,21 +67,22 @@
         button {
             width: 100%;
             padding: 18px;
-            background-color: var(--ios-blue);
+            background-color: var(--ios-purple);
             color: white;
             border: none;
             border-radius: 16px;
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
+            transition: opacity 0.2s;
         }
+        button:active { opacity: 0.8; }
 
         #result { display: none; margin-top: 20px; animation: fadeIn 0.4s ease; }
         .result-main { text-align: center; }
-        .big-number { font-size: 52px; font-weight: 800; color: var(--ios-blue); margin: 5px 0; }
-        .cumul-box { color: var(--ios-green); font-weight: 700; font-size: 28px; }
+        .big-number { font-size: 52px; font-weight: 800; color: var(--ios-purple); margin: 5px 0; }
+        .info-text { font-size: 14px; color: var(--ios-gray); margin-bottom: 15px; }
 
-        /* iOS Toggle Switch */
         .toggle { position: relative; display: inline-block; width: 51px; height: 31px; }
         .toggle input { opacity: 0; width: 0; height: 0; }
         .slider {
@@ -92,7 +94,7 @@
             background-color: white; transition: .4s; border-radius: 50%;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        input:checked + .slider { background-color: var(--ios-green); }
+        input:checked + .slider { background-color: #34C759; }
         input:checked + .slider:before { transform: translateX(20px); }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
@@ -102,12 +104,12 @@
 
 <div class="container">
     <header>
-        <h1>IVF Predictor</h1>
-        <p>EBM Model 2026.2</p>
+        <h1>Euploidy Predictor</h1>
+        <p>EBM Genetic Model 2026</p>
     </header>
 
     <div class="card">
-        <h2>Pacientka</h2>
+        <h2>Základní parametry</h2>
         <div class="grid-2">
             <div class="input-row">
                 <label>Věk ženy</label>
@@ -118,125 +120,117 @@
                 <input type="number" id="amh" value="2.0" step="0.1">
             </div>
         </div>
+        <div class="grid-2">
+            <div class="input-row">
+                <label>Výška (cm)</label>
+                <input type="number" id="height" value="170">
+            </div>
+            <div class="input-row">
+                <label>Váha (kg)</label>
+                <input type="number" id="weight" value="65">
+            </div>
+        </div>
     </div>
 
     <div class="card">
-        <h2>Laboratoř & Metody</h2>
+        <h2>Metody a životní styl</h2>
         <div class="switch-row">
-            <label>Darovaná vajíčka</label>
-            <label class="toggle"><input type="checkbox" id="donor"><span class="slider"></span></label>
-        </div>
-        <div class="switch-row">
-            <label>Spermioselekce (ZyMōt)</label>
+            <label>Metoda ZyMōt</label>
             <label class="toggle"><input type="checkbox" id="zymot"><span class="slider"></span></label>
-        </div>
-        <div class="switch-row">
-            <label>Genetika (PGT-A)</label>
-            <label class="toggle"><input type="checkbox" id="pgta"><span class="slider"></span></label>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>Faktory</h2>
-        <div class="input-row">
-            <label>Diagnóza</label>
-            <select id="diag">
-                <option value="1.0">Idiopatická</option>
-                <option value="0.8">Endometrióza</option>
-                <option value="1.1">PCOS</option>
-                <option value="0.75">Těžký mužský faktor</option>
-            </select>
         </div>
         <div class="switch-row">
             <label>Aktivní kouření</label>
             <label class="toggle"><input type="checkbox" id="smoke"><span class="slider"></span></label>
         </div>
+        <div class="input-row" style="margin-top:15px;">
+            <label>Předchozí odběry (neúspěšné)</label>
+            <select id="prev_cycles">
+                <option value="0">Žádný</option>
+                <option value="1">1 cyklus</option>
+                <option value="2">2 a více</option>
+            </select>
+        </div>
     </div>
 
-    <button onclick="calculate()">Vypočítat šanci</button>
+    <button onclick="calculateEuploidy()">Analyzovat genetický potenciál</button>
 
     <div id="result" class="card result-main">
-        <h2 id="status_label">Vlastní vajíčka</h2>
-        <div class="big-number" id="res1">0%</div>
-        <p style="font-size: 14px; color: var(--ios-gray);">Úspěšnost na 1 zahájený cyklus</p>
+        <h2>Pravděpodobnost zisku min. 1 euploidního embrya</h2>
+        <div class="big-number" id="res_perc">0%</div>
+        <p class="info-text">na jeden zahájený stimulační cyklus</p>
+        
         <hr style="border:0; border-top:0.5px solid #EEE; margin: 15px 0;">
-        <div class="cumul-box" id="res3">0%</div>
-        <p style="font-size: 14px; color: var(--ios-gray);">Kumulativní šance (3 cykly)</p>
-        <p id="advice" style="margin-top: 15px; font-size: 14px; line-height: 1.5;"></p>
+        
+        <div style="text-align: left; font-size: 14px; line-height: 1.6;">
+            <strong>Klinický odhad:</strong>
+            <ul style="padding-left: 20px; margin-top: 8px;">
+                <li id="egg_yield">Očekávaný počet oocytů: -</li>
+                <li id="euploidy_rate">Míra euploidie u blastocyst: -</li>
+            </ul>
+            <p id="advice" style="color: #444; font-style: italic; margin-top: 10px;"></p>
+        </div>
     </div>
 </div>
 
 <script>
-function calculate() {
+function calculateEuploidy() {
     const age = parseInt(document.getElementById('age').value);
     const amh = parseFloat(document.getElementById('amh').value);
-    const isDonor = document.getElementById('donor').checked;
+    const height = parseInt(document.getElementById('height').value);
+    const weight = parseInt(document.getElementById('weight').value);
     const isZymot = document.getElementById('zymot').checked;
-    const isPgta = document.getElementById('pgta').checked;
     const isSmoke = document.getElementById('smoke').checked;
-    const diagVal = parseFloat(document.getElementById('diag').value);
+    const prevCycles = parseInt(document.getElementById('prev_cycles').value);
 
-    let chance = 0;
+    // 1. Odhad počtu vajíček (egg yield) na základě AMH a věku
+    let expectedEggs = amh * 4.5; 
+    if (age > 40) expectedEggs *= 0.8;
+    
+    // BMI vliv na výtěžnost a kvalitu
+    const bmi = weight / ((height/100)**2);
+    if (bmi > 30) expectedEggs *= 0.9;
+    if (bmi > 35) expectedEggs *= 0.75;
 
-    if (isDonor) {
-        // Darovaná vajíčka - vysoká šance nezávislá na věku matky
-        chance = 55;
-        document.getElementById('status_label').innerText = "Darovaná vajíčka";
-    } else {
-        document.getElementById('status_label').innerText = "Vlastní vajíčka";
-        // EBM Křivka: Agresivnější pokles po 34. roce
-        if (age < 30) chance = 52;
-        else if (age < 34) chance = 48;
-        else if (age == 34) chance = 42;
-        else if (age == 35) chance = 38;
-        else if (age == 36) chance = 32;
-        else if (age == 37) chance = 28;
-        else if (age == 38) chance = 22;
-        else if (age == 39) chance = 18;
-        else if (age == 40) chance = 12;
-        else if (age == 41) chance = 8;
-        else if (age == 42) chance = 4;
-        else if (age >= 43) chance = 2;
-    }
+    // 2. Míra euploidie (EBM data - podíl geneticky zdravých blastocyst dle věku)
+    let euploidyRate = 0;
+    if (age < 35) euploidyRate = 0.70;
+    else if (age < 37) euploidyRate = 0.60;
+    else if (age < 39) euploidyRate = 0.45;
+    else if (age < 41) euploidyRate = 0.30;
+    else if (age < 43) euploidyRate = 0.15;
+    else euploidyRate = 0.05;
 
-    // AMH vliv (u vlastních vajíček)
-    if (!isDonor) {
-        if (amh < 0.5) chance *= 0.6;
-        else if (amh < 1.0) chance *= 0.85;
-        else if (amh > 3.0) chance *= 1.1;
-    }
+    // Modifikace kvality (kouření, ZyMōt selekce vliv na blastulaci)
+    if (isSmoke) euploidyRate *= 0.8;
+    if (isZymot) euploidyRate *= 1.05; 
 
-    // Zymot bonus - výraznější u mužského faktoru
-    if (isZymot) {
-        let zymotBonus = (diagVal < 1.0) ? 1.15 : 1.05;
-        chance *= zymotBonus;
-    }
+    // 3. Výpočet pravděpodobnosti zisku alespoň jednoho zdravého embrya
+    // Předpoklad: cca 60% vajíček se oplodní, 40% z nich dojde do stadia blastocysty
+    let expectedBlastocysts = expectedEggs * 0.60 * 0.40;
+    
+    // Poissonovo rozdělení pro pravděpodobnost aspoň 1 úspěchu: 1 - e^(-lambda)
+    // lambda = počet blastocyst * míra euploidie
+    let lambda = expectedBlastocysts * euploidyRate;
+    let probabilityAtLeastOne = (1 - Math.exp(-lambda)) * 100;
 
-    // PGT-A bonus - klíčový u starších žen (nad 35)
-    if (isPgta && !isDonor) {
-        if (age > 40) chance *= 1.8; // U starších žen PGT-A dramaticky mění šanci na úspěšný transfer
-        else if (age > 35) chance *= 1.4;
-        else chance *= 1.1; // U mladých je vliv menší
-    }
+    // Korekce na předchozí neúspěchy (může indikovat horší kvalitu oocytů)
+    if (prevCycles === 1) probabilityAtLeastOne *= 0.9;
+    if (prevCycles === 2) probabilityAtLeastOne *= 0.75;
 
-    // Kouření a Diagnóza
-    chance *= diagVal;
-    if (isSmoke) chance *= 0.7;
-
-    // Finální ošetření a výpočet kumulativní šance
-    let res1 = Math.min(Math.max(chance, 1), 65);
-    let p = res1 / 100;
-    let res3 = (1 - Math.pow(1 - p, 3)) * 100;
-
-    // UI
+    // UI Výstup
     document.getElementById('result').style.display = 'block';
-    document.getElementById('res1').innerText = res1.toFixed(1) + "%";
-    document.getElementById('res3').innerText = Math.round(res3) + "%";
+    document.getElementById('res_perc').innerText = Math.round(Math.min(probabilityAtLeastOne, 95)) + "%";
+    document.getElementById('egg_yield').innerText = "Očekávaný počet oocytů: " + Math.round(expectedEggs);
+    document.getElementById('euploidy_rate').innerText = "Míra euploidie pro váš věk: " + (euploidyRate * 100).toFixed(0) + "%";
 
     let advice = "";
-    if (age >= 35 && !isPgta && !isDonor) advice = "Vzhledem k věku 35+ statistiky EBM doporučují PGT-A pro zkrácení doby k otěhotnění.";
-    if (isZymot && diagVal < 1.0) advice = "Metoda ZyMōt je u mužského faktoru výbornou volbou pro eliminaci fragmentace DNA.";
-    if (isDonor) advice = "Program DE eliminuje vliv věku pacientky a dosahuje nejvyšších kumulativních úspěchů.";
+    if (age >= 38 && probabilityAtLeastOne < 30) {
+        advice = "Nízká pravděpodobnost zisku euploidního embrya. Doporučujeme uvažovat o kumulaci embryí (duostim) nebo darovaných oocytech.";
+    } else if (bmi > 30) {
+        advice = "Snížení BMI by mohlo zvýšit výtěžnost oocytů a snížit metabolický stres v ovariu.";
+    } else {
+        advice = "Vaše šance na zisk geneticky zdravého embrya v jednom cyklu jsou velmi dobré.";
+    }
     document.getElementById('advice').innerText = advice;
 
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
