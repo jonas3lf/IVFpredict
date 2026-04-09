@@ -5,233 +5,246 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>IVF Euploidy Predictor</title>
-    
+    <title>IVF Clinic Predictor</title>
     <link rel="apple-touch-icon" href="icon3.PNG">
 
     <style>
         :root {
-            --ios-blue: #007AFF;
-            --ios-purple: #5856D6;
-            --ios-bg: #F2F2F7;
-            --ios-card: #FFFFFF;
-            --ios-gray: #8E8E93;
+            --clinic-blue: #0A84FF;
+            --clinic-purple: #5E5CE6;
+            --clinic-bg: #F2F2F7;
+            --clinic-card: #FFFFFF;
+            --text-main: #1C1C1E;
+            --text-secondary: #8E8E93;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--ios-bg);
+            background-color: var(--clinic-bg);
             margin: 0;
-            padding: calc(20px + env(safe-area-inset-top)) 20px 40px 20px;
-            color: #000;
+            padding: calc(10px + env(safe-area-inset-top)) 15px 40px;
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container { max-width: 550px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 25px; }
-        header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; color: var(--ios-purple); }
+        .container { max-width: 650px; margin: 0 auto; }
         
+        header { text-align: left; margin: 20px 0 25px 5px; }
+        header h1 { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
+        header p { color: var(--text-secondary); margin: 5px 0 0; font-size: 15px; }
+
         .card {
-            background: var(--ios-card);
-            border-radius: 14px;
-            padding: 18px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            margin-bottom: 18px;
+            background: var(--clinic-card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
         }
 
-        h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; color: var(--ios-gray); margin-bottom: 12px; }
+        h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--clinic-blue); margin: 0 0 15px; letter-spacing: 0.5px; }
 
-        .input-row { margin-bottom: 15px; }
-        label { display: block; font-size: 15px; font-weight: 500; margin-bottom: 6px; }
-
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
+        
         input, select {
             width: 100%;
             padding: 12px;
-            border: 1px solid #D1D1D6;
+            border: 1px solid #E5E5EA;
             border-radius: 10px;
             font-size: 16px;
+            background: #F9F9F9;
             box-sizing: border-box;
-            background-color: #FFF;
         }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-        .switch-row {
+        .toggle-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 12px 0;
-            border-bottom: 0.5px solid #E5E5EA;
+            border-bottom: 0.5px solid #F2F2F7;
         }
-        .switch-row:last-child { border-bottom: none; }
 
         button {
             width: 100%;
-            padding: 18px;
-            background-color: var(--ios-purple);
+            padding: 20px;
+            background: linear-gradient(135deg, var(--clinic-blue), var(--clinic-purple));
             color: white;
             border: none;
-            border-radius: 16px;
+            border-radius: 14px;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: opacity 0.2s;
+            box-shadow: 0 8px 20px rgba(94, 92, 230, 0.3);
         }
-        button:active { opacity: 0.8; }
 
-        #result { display: none; margin-top: 20px; animation: fadeIn 0.4s ease; }
-        .result-main { text-align: center; }
-        .big-number { font-size: 52px; font-weight: 800; color: var(--ios-purple); margin: 5px 0; }
-        .info-text { font-size: 14px; color: var(--ios-gray); margin-bottom: 15px; }
+        /* Výsledková vizualizace */
+        #result { display: none; animation: slideUp 0.5s ease-out; }
+        
+        .stat-main { text-align: center; padding: 10px 0; }
+        .chance-val { font-size: 64px; font-weight: 900; color: var(--clinic-blue); margin: 10px 0; }
+        
+        .funnel { margin-top: 25px; }
+        .funnel-step { margin-bottom: 15px; }
+        .funnel-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+        .bar-bg { background: #E5E5EA; height: 10px; border-radius: 5px; overflow: hidden; }
+        .bar-fill { background: var(--clinic-blue); height: 100%; width: 0%; transition: width 1s ease-in-out; }
 
-        .toggle { position: relative; display: inline-block; width: 51px; height: 31px; }
-        .toggle input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #E5E5EA; transition: .4s; border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px;
-            background-color: white; transition: .4s; border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* iOS Switch */
+        .switch { position: relative; display: inline-block; width: 51px; height: 31px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E5E5EA; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         input:checked + .slider { background-color: #34C759; }
         input:checked + .slider:before { transform: translateX(20px); }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>Euploidy Predictor</h1>
-        <p>EBM Genetic Model 2026</p>
+        <h1>IVF Clinic Predictor</h1>
+        <p>Konzultační nástroj pro lékaře (EBM 2026)</p>
     </header>
 
     <div class="card">
-        <h2>Základní parametry</h2>
-        <div class="grid-2">
-            <div class="input-row">
+        <h2>Pacientka & Partner</h2>
+        <div class="grid">
+            <div class="input-group">
                 <label>Věk ženy</label>
-                <input type="number" id="age" value="34">
+                <input type="number" id="age" value="36">
             </div>
-            <div class="input-row">
-                <label>AMH (ng/ml)</label>
-                <input type="number" id="amh" value="2.0" step="0.1">
+            <div class="input-group">
+                <label>Věk partnera</label>
+                <input type="number" id="age_man" value="38">
             </div>
         </div>
-        <div class="grid-2">
-            <div class="input-row">
-                <label>Výška (cm)</label>
-                <input type="number" id="height" value="170">
+        <div class="grid">
+            <div class="input-group">
+                <label>AMH (ng/ml)</label>
+                <input type="number" id="amh" value="2.2" step="0.1">
             </div>
-            <div class="input-row">
-                <label>Váha (kg)</label>
-                <input type="number" id="weight" value="65">
+            <div class="input-group">
+                <label>BMI</label>
+                <input type="number" id="bmi" value="24" placeholder="Vypočtené BMI">
             </div>
         </div>
     </div>
 
     <div class="card">
-        <h2>Metody a životní styl</h2>
-        <div class="switch-row">
-            <label>Metoda ZyMōt</label>
-            <label class="toggle"><input type="checkbox" id="zymot"><span class="slider"></span></label>
+        <h2>Laboratorní faktory</h2>
+        <div class="toggle-row">
+            <label>Spermioselekce (ZyMōt/MACS)</label>
+            <label class="switch"><input type="checkbox" id="zymot" checked><span class="slider"></span></label>
         </div>
-        <div class="switch-row">
-            <label>Aktivní kouření</label>
-            <label class="toggle"><input type="checkbox" id="smoke"><span class="slider"></span></label>
+        <div class="toggle-row">
+            <label>Aktivní kouření (pár)</label>
+            <label class="switch"><input type="checkbox" id="smoke"><span class="slider"></span></label>
         </div>
-        <div class="input-row" style="margin-top:15px;">
-            <label>Předchozí odběry (neúspěšné)</label>
-            <select id="prev_cycles">
-                <option value="0">Žádný</option>
-                <option value="1">1 cyklus</option>
-                <option value="2">2 a více</option>
+        <div class="input-group" style="margin-top:15px;">
+            <label>Plánovaný protokol</label>
+            <select id="protocol">
+                <option value="1.0">Antagonista (Krátký)</option>
+                <option value="1.15">DuoStim (Double stimulation)</option>
+                <option value="0.9">Agonista (Dlouhý)</option>
             </select>
         </div>
     </div>
 
-    <button onclick="calculateEuploidy()">Analyzovat genetický potenciál</button>
+    <button onclick="calculateClinic()">Analyzovat prognózu cyklu</button>
 
-    <div id="result" class="card result-main">
-        <h2>Pravděpodobnost zisku min. 1 euploidního embrya</h2>
-        <div class="big-number" id="res_perc">0%</div>
-        <p class="info-text">na jeden zahájený stimulační cyklus</p>
-        
-        <hr style="border:0; border-top:0.5px solid #EEE; margin: 15px 0;">
-        
-        <div style="text-align: left; font-size: 14px; line-height: 1.6;">
-            <strong>Klinický odhad:</strong>
-            <ul style="padding-left: 20px; margin-top: 8px;">
-                <li id="egg_yield">Očekávaný počet oocytů: -</li>
-                <li id="euploidy_rate">Míra euploidie u blastocyst: -</li>
-            </ul>
-            <p id="advice" style="color: #444; font-style: italic; margin-top: 10px;"></p>
+    <div id="result" class="card">
+        <div class="stat-main">
+            <h2>Pravděpodobnost zisku euploidního embrya</h2>
+            <div class="chance-val" id="res_perc">0%</div>
         </div>
+
+        <div class="funnel">
+            <h2>Předpokládaná atrice (úbytek)</h2>
+            <div class="funnel-step">
+                <div class="funnel-label"><span>Získané oocyty (MII)</span><span id="val_eggs">0</span></div>
+                <div class="bar-bg"><div class="bar-fill" id="bar_eggs"></div></div>
+            </div>
+            <div class="funnel-step">
+                <div class="funnel-label"><span>Blastocysty (D5/D6)</span><span id="val_blasts">0</span></div>
+                <div class="bar-bg"><div class="bar-fill" id="bar_blasts" style="background: var(--clinic-purple);"></div></div>
+            </div>
+            <div class="funnel-step" style="opacity: 0.8;">
+                <div class="funnel-label"><span>Geneticky zdravá (Euploidní)</span><span id="val_eu">0</span></div>
+                <div class="bar-bg"><div class="bar-fill" id="bar_eu" style="background: #34C759;"></div></div>
+            </div>
+        </div>
+        
+        <p id="clinic_advice" style="margin-top:20px; font-size: 14px; border-left: 3px solid var(--clinic-blue); padding-left: 10px; color: #444;"></p>
     </div>
 </div>
 
 <script>
-function calculateEuploidy() {
+function calculateClinic() {
     const age = parseInt(document.getElementById('age').value);
+    const ageM = parseInt(document.getElementById('age_man').value);
     const amh = parseFloat(document.getElementById('amh').value);
-    const height = parseInt(document.getElementById('height').value);
-    const weight = parseInt(document.getElementById('weight').value);
+    const bmi = parseFloat(document.getElementById('bmi').value);
     const isZymot = document.getElementById('zymot').checked;
     const isSmoke = document.getElementById('smoke').checked;
-    const prevCycles = parseInt(document.getElementById('prev_cycles').value);
+    const protocol = parseFloat(document.getElementById('protocol').value);
 
-    // 1. Odhad počtu vajíček (egg yield) na základě AMH a věku
-    let expectedEggs = amh * 4.5; 
-    if (age > 40) expectedEggs *= 0.8;
+    // 1. Predikce zisku vajíček (MII oocyty)
+    let eggs = amh * 4.2 * protocol;
+    if (age > 40) eggs *= 0.85;
+    if (bmi > 30) eggs *= 0.88;
+    eggs = Math.max(eggs, 1);
+
+    // 2. Blastulační míra (kolik vajíček dojde do stadia blastocysty)
+    // Průměrně 60% oplození * 40% vývoj = 24% z MII oocytů
+    let blastRate = 0.24;
+    if (ageM > 45) blastRate *= 0.9; // Vliv věku muže na blastulaci
+    if (isSmoke) blastRate *= 0.85;
+    if (isZymot) blastRate *= 1.1; 
     
-    // BMI vliv na výtěžnost a kvalitu
-    const bmi = weight / ((height/100)**2);
-    if (bmi > 30) expectedEggs *= 0.9;
-    if (bmi > 35) expectedEggs *= 0.75;
+    let blasts = eggs * blastRate;
 
-    // 2. Míra euploidie (EBM data - podíl geneticky zdravých blastocyst dle věku)
-    let euploidyRate = 0;
-    if (age < 35) euploidyRate = 0.70;
-    else if (age < 37) euploidyRate = 0.60;
-    else if (age < 39) euploidyRate = 0.45;
-    else if (age < 41) euploidyRate = 0.30;
-    else if (age < 43) euploidyRate = 0.15;
-    else euploidyRate = 0.05;
+    // 3. Míra euploidie dle věku (Data: Franasiak et al.)
+    let euRate = 0;
+    if (age < 35) euRate = 0.65;
+    else if (age <= 37) euRate = 0.50;
+    else if (age <= 39) euRate = 0.35;
+    else if (age <= 41) euRate = 0.20;
+    else if (age <= 43) euRate = 0.10;
+    else euRate = 0.04;
 
-    // Modifikace kvality (kouření, ZyMōt selekce vliv na blastulaci)
-    if (isSmoke) euploidyRate *= 0.8;
-    if (isZymot) euploidyRate *= 1.05; 
-
-    // 3. Výpočet pravděpodobnosti zisku alespoň jednoho zdravého embrya
-    // Předpoklad: cca 60% vajíček se oplodní, 40% z nich dojde do stadia blastocysty
-    let expectedBlastocysts = expectedEggs * 0.60 * 0.40;
+    let euFinal = blasts * euRate;
     
-    // Poissonovo rozdělení pro pravděpodobnost aspoň 1 úspěchu: 1 - e^(-lambda)
-    // lambda = počet blastocyst * míra euploidie
-    let lambda = expectedBlastocysts * euploidyRate;
-    let probabilityAtLeastOne = (1 - Math.exp(-lambda)) * 100;
+    // Pravděpodobnost aspoň 1 (Poisson)
+    let prob = (1 - Math.exp(-euFinal)) * 100;
 
-    // Korekce na předchozí neúspěchy (může indikovat horší kvalitu oocytů)
-    if (prevCycles === 1) probabilityAtLeastOne *= 0.9;
-    if (prevCycles === 2) probabilityAtLeastOne *= 0.75;
-
-    // UI Výstup
+    // UI Update
     document.getElementById('result').style.display = 'block';
-    document.getElementById('res_perc').innerText = Math.round(Math.min(probabilityAtLeastOne, 95)) + "%";
-    document.getElementById('egg_yield').innerText = "Očekávaný počet oocytů: " + Math.round(expectedEggs);
-    document.getElementById('euploidy_rate').innerText = "Míra euploidie pro váš věk: " + (euploidyRate * 100).toFixed(0) + "%";
+    document.getElementById('res_perc').innerText = Math.round(prob) + "%";
+    
+    document.getElementById('val_eggs').innerText = Math.round(eggs);
+    document.getElementById('val_blasts').innerText = blasts.toFixed(1);
+    document.getElementById('val_eu').innerText = euFinal.toFixed(1);
 
-    let advice = "";
-    if (age >= 38 && probabilityAtLeastOne < 30) {
-        advice = "Nízká pravděpodobnost zisku euploidního embrya. Doporučujeme uvažovat o kumulaci embryí (duostim) nebo darovaných oocytech.";
-    } else if (bmi > 30) {
-        advice = "Snížení BMI by mohlo zvýšit výtěžnost oocytů a snížit metabolický stres v ovariu.";
+    // Animace barů
+    setTimeout(() => {
+        document.getElementById('bar_eggs').style.width = "90%";
+        document.getElementById('bar_blasts').style.width = (blastRate * 200) + "%";
+        document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
+    }, 100);
+
+    // Klinické doporučení
+    let adv = "";
+    if (prob < 40 && age < 42) {
+        adv = "Lékařská poznámka: Prognóza naznačuje potřebu vyšší stimulace nebo DuoStim protokolu pro zvýšení kumulativního zisku oocytů.";
+    } else if (age >= 42) {
+        adv = "Poznámka: Pravděpodobnost euploidie je limitována biologickým věkem oocytů. Zvážit PGT-A pro selekci perspektivního embrya.";
     } else {
-        advice = "Vaše šance na zisk geneticky zdravého embrya v jednom cyklu jsou velmi dobré.";
+        adv = "Prognóza je příznivá. Parametry naznačují dobrou odpověď na stimulaci s vysokou šancí na zisk kompetentního embrya.";
     }
-    document.getElementById('advice').innerText = advice;
+    document.getElementById('clinic_advice').innerText = adv;
 
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
