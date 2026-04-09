@@ -58,7 +58,6 @@
             -webkit-appearance: none;
         }
 
-        /* TOGGLES & SWITCHES */
         .toggle-row {
             display: flex;
             justify-content: space-between;
@@ -90,7 +89,6 @@
             border-radius: 14px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px;
         }
 
-        /* AMH UNIT SELECTOR */
         .amh-flex { display: flex; gap: 8px; }
         .amh-flex input { flex: 2; }
         .amh-flex select { flex: 1; min-width: 90px; }
@@ -144,8 +142,8 @@
             <div class="input-group">
                 <label>AMH (Ovariální rezerva)</label>
                 <div class="amh-flex">
-                    <input type="number" id="amh" step="0.1" placeholder="Typické: 2.0">
-                    <select id="amh_unit">
+                    <input type="number" id="amh" step="0.1">
+                    <select id="amh_unit" onchange="updateAverageAMH()">
                         <option value="ng">ng/ml</option>
                         <option value="nmol">nmol/l</option>
                     </select>
@@ -260,23 +258,14 @@
 </div>
 
 <script>
-// Funkce pro automatické dosazení průměrného AMH dle věku
 function updateAverageAMH() {
     const age = parseInt(document.getElementById('age').value);
     const unit = document.getElementById('amh_unit').value;
     const amhField = document.getElementById('amh');
-    
     if (!age) return;
-
-    // Lineární odhad průměrného AMH (ng/ml): 25 let ~ 3.5, 35 let ~ 2.0, 45 let ~ 0.3
     let avgNg = 3.5 - ((age - 25) * 0.16);
     avgNg = Math.max(0.2, Math.min(4.5, avgNg));
-
-    if (unit === 'nmol') {
-        amhField.value = (avgNg * 7.14).toFixed(1);
-    } else {
-        amhField.value = avgNg.toFixed(1);
-    }
+    amhField.value = unit === 'nmol' ? (avgNg * 7.14).toFixed(1) : avgNg.toFixed(1);
 }
 
 function calculate() {
@@ -288,10 +277,7 @@ function calculate() {
     const height = parseInt(document.getElementById('height').value);
     const weight = parseInt(document.getElementById('weight').value);
     
-    // Převod AMH na ng/ml pro výpočet
-    let amh = amhInput;
-    if (amhUnit === 'nmol') { amh = amhInput / 7.14; }
-
+    let amh = amhUnit === 'nmol' ? amhInput / 7.14 : amhInput;
     const afc = afcRaw ? parseInt(afcRaw) : null;
     const isPcos = document.getElementById('diag_pcos').checked;
     const isEndo = document.getElementById('diag_endo').checked;
@@ -303,26 +289,27 @@ function calculate() {
 
     const bmi = weight / ((height/100)**2);
 
-    // 1. Zisk vajíček
-    let predictedEggs = 0;
-    if (amh !== null && afc !== null) {
-        predictedEggs = (amh * 5.3 * 0.4) + (afc * 0.82 * 0.6);
-    } else if (amh !== null) {
-        predictedEggs = amh * 5.3;
-    } else {
-        predictedEggs = (afc || 10) * 0.82;
-    }
+    // DYNAMICKÁ PENALIZACE BMI
+    let bmiPenalty = 1.0;
+    let bmiCategory = "norma";
+    if (bmi >= 25 && bmi < 30) { bmiPenalty = 0.95; bmiCategory = "nadváha"; }
+    else if (bmi >= 30 && bmi < 35) { bmiPenalty = 0.88; bmiCategory = "obezita1"; }
+    else if (bmi >= 35 && bmi < 40) { bmiPenalty = 0.80; bmiCategory = "obezita2"; }
+    else if (bmi >= 40) { bmiPenalty = 0.65; bmiCategory = "obezita3"; }
 
-    // Korekce
+    let predictedEggs = (amh !== null && afc !== null) ? (amh * 5.3 * 0.4) + (afc * 0.82 * 0.6) : (amh !== null ? amh * 5.3 : (afc || 10) * 0.82);
+
     if (age < 32) predictedEggs *= 1.1;
     if (age > 40) predictedEggs *= 0.85;
     if (isPcos) predictedEggs *= 1.25;
     if (isEndo) predictedEggs *= 0.82;
-    if (bmi > 30) predictedEggs *= 0.88;
+    
+    // Aplikace dynamické BMI penalizace
+    predictedEggs *= bmiPenalty;
+    
     predictedEggs *= prevPenalty;
     predictedEggs = Math.min(Math.max(predictedEggs, 0.5), 35);
 
-    // 2. Blastocysty
     let blastRate = isIcsi ? 0.28 : 0.24; 
     if (isMale) blastRate *= isIcsi ? (isZymot ? 1.0 : 0.82) : 0.45;
     if (isZymot) blastRate *= 1.15; 
@@ -330,7 +317,6 @@ function calculate() {
     if (ageM > 45) blastRate *= 0.90;
     let blasts = predictedEggs * blastRate;
 
-    // 3. Euploidie
     let euRate = 0.65;
     if (age > 34 && age <= 37) euRate = 0.50;
     else if (age > 37 && age <= 39) euRate = 0.35;
@@ -342,7 +328,6 @@ function calculate() {
     let euFinal = blasts * euRate;
     let prob1 = (1 - Math.exp(-euFinal)) * 100;
 
-    // UI Rendering
     document.getElementById('result').style.display = 'block';
     document.getElementById('res_perc').innerText = Math.round(Math.min(prob1, 96)) + "%";
     document.getElementById('val_eggs').innerText = Math.round(predictedEggs);
@@ -362,13 +347,18 @@ function calculate() {
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
-    // INTERPRETACE
     let adv = `<strong>Klinická interpretace:</strong><br><br>`;
-    adv += `<p>• <strong>Věk (${age} let):</strong> Šance, že embryo bude geneticky v pořádku, je cca ${Math.round(euRate*100)} %.</p>`;
-    if (isEndo) adv += `<p>• <strong>Endometrióza:</strong> Může snižovat kvalitu a počet získaných oocytů.</p>`;
-    if (bmi > 30) adv += `<p>• <strong>BMI (${bmi.toFixed(1)}):</strong> Vyšší váha snižuje výtěžnost stimulace o cca 12 %.</p>`;
-    if (isMale) adv += `<p>• <strong>Male faktor:</strong> ICSI a ZyMōt pomáhají dosáhnout optimální blastulace.</p>`;
-    if (euFinal < 0.8) adv += `<p style="color:var(--warning); font-weight:600;">➔ Doporučení: Predikce indikuje zisk nižší než 1 zdravé embryo. Doporučujeme diskuzi o kumulaci (poolingu).</p>`;
+    adv += `<p>• <strong>Věk (${age} let):</strong> Primární faktor kvality. Očekávaná euploidie oocytů je ${Math.round(euRate*100)} %.</p>`;
+    
+    // Specifické BMI varování
+    if (bmiCategory === "obezita1") adv += `<p>• <strong>Obezita I. st. (BMI ${bmi.toFixed(1)}):</strong> Snižuje výtěžnost o cca 12 % z důvodu horší odpovědi na stimulaci.</p>`;
+    else if (bmiCategory === "obezita2") adv += `<p style="color:var(--warning);">• <strong>Obezita II. st. (BMI ${bmi.toFixed(1)}):</strong> Výrazné snížení výtěžnosti (-20 %) a riziko horší kvality oocytů.</p>`;
+    else if (bmiCategory === "obezita3") adv += `<p style="color:var(--danger); font-weight:700;">• <strong>Morbidní obezita (BMI ${bmi.toFixed(1)}):</strong> Kritický vliv na stimulaci (-35 %) a technická náročnost odběru.</p>`;
+    
+    if (isEndo) adv += `<p>• <strong>Endometrióza:</strong> Často spojena s nižším počtem získaných vajíček.</p>`;
+    if (isMale) adv += `<p>• <strong>Male faktor:</strong> ICSI a ZyMōt jsou klíčové pro optimalizaci vývoje blastocyst.</p>`;
+    
+    if (euFinal < 0.8) adv += `<p style="color:var(--warning); font-weight:600;">➔ Doporučení: Nízký předpokládaný zisk. Vhodné zvážit kumulaci embryí (pooling).</p>`;
 
     document.getElementById('advice').innerHTML = adv;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
