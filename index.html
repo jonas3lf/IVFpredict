@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="IVF Predictor">
+    
+    <link rel="apple-touch-icon" href="icon3.PNG">
+    <link rel="icon" type="image/png" href="icon3.PNG">
+
     <title>IVF Clinical Predictor Elite</title>
     <style>
         :root {
@@ -293,6 +299,7 @@ function calculate() {
 
     const bmi = weight / ((height/100)**2);
 
+    // Zisk oocytů s nelineární saturací nad 4 ng/ml
     let effectiveAmh = amh;
     if (amh > 4) {
         effectiveAmh = 4 + Math.log10(amh - 3); 
@@ -355,12 +362,12 @@ function calculate() {
     }, 100);
 
     let adv = `<strong>Klinická interpretace:</strong><br><br>`;
-    
-    // ZMĚNĚNÁ FORMULACE DLE POŽADAVKU
-    adv += `<p>• <strong>Věk (${age} let):</strong> Očekávaná šance na euploidii je **${Math.round(euRate*100)} % na každé testované embryo**.</p>`;
+    // Upravená formulace pro euploidii na jedno testované embryo
+    adv += `<p>• <strong>Věk (${age} let):</strong> Očekávaná šance na euploidii je **${Math.round(euRate*100)} % na každé vyšetřované/testované embryo**.</p>`;
     
     if (bmi >= 30) adv += `<p>• <strong>BMI:</strong> Snížená citlivost na stimulaci z důvodu vyšší hmotnosti.</p>`;
     if (isPcos) adv += `<p>• <strong>PCOS:</strong> Vyšší kvantita, ale riziko nižší vyzrálosti při extrémním zisku.</p>`;
+    if (amhInput > 19.9) adv += `<p style="color:var(--danger);">⚠️ AMH bylo zastropováno na klinickou hranici 19.9 ng/ml.</p>`;
 
     document.getElementById('advice').innerHTML = adv;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
