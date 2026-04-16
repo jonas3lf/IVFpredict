@@ -215,6 +215,7 @@ function calculate() {
     if (male) blastRate *= (zymot ? 0.95 : 0.72);
     if (smoke) blastRate *= 0.82;
     if (endo) blastRate *= 0.92;
+    if (pcos) blastRate *= 0.90; 
     let blasts = eggs * blastRate;
 
     // 3. Euploidie
@@ -245,11 +246,20 @@ function calculate() {
     let html = `<strong>Klinická úvaha:</strong><br><br>`;
     html += `<span class="inter-item">• <strong>Věk:</strong> Šance na zdravé embryo je ${Math.round(euRate*100)} % (odpovídá ${age} letům).</span>`;
     
-    if (pcos) html += `<span class="inter-item">• <strong>PCOS:</strong> Očekáváme vysoký počet vajíček, ale hrozí riziko OHSS. Doporučen "Freeze-all" protokol a KET.</span>`;
-    if (bmi > 30) html += `<span class="inter-item">• <strong>BMI (${bmi.toFixed(1)}):</strong> Vyšší váha může snižovat citlivost na stimulaci a kvalitu oocytů.</span>`;
-    if (smoke) html += `<span class="inter-item">• <strong>Kouření:</strong> Výrazně zvyšuje oxidační stres a snižuje šanci na zisk blastocysty.</span>`;
-    if (male && !zymot) html += `<span class="inter-item">• <strong>Mužský faktor:</strong> Bez selekční metody (ZyMōt) hrozí vyšší fragmentace DNA a zastavení vývoje.</span>`;
-    if (zymot && male) html += `<span class="inter-item">• <strong>ZyMōt:</strong> Použití čipu kompenzuje mužský faktor a zvyšuje šanci na blastocystu.</span>`;
+    if (pcos) {
+        html += `<span class="inter-item">• <strong>PCOS:</strong> Očekáváme vysoký počet vajíček, ale často nižší kvality. Vzhledem k riziku OHSS je doporučen "Freeze-all" protokol a následný KET.</span>`;
+    }
+    
+    if (bmi > 30) {
+        html += `<span class="inter-item">• <strong>BMI (${bmi.toFixed(1)}):</strong> Nadváha způsobuje horší reakci na stimulaci, což vyžaduje vyšší dávky hormonů. Navíc snižuje šanci na úspěšnou implantaci a zvyšuje rizika těhotenských komplikací.</span>`;
+    }
+
+    if (smoke) {
+        html += `<span class="inter-item">• <strong>Kouření:</strong> Výrazně zvyšuje oxidační stres a snižuje šanci na kvalitní blastocysty. Doporučujeme zvýšený příjem <strong>antioxidantů</strong> (Melatonin, CoQ10, Vitamín E).</span>`;
+    }
+
+    if (male && !zymot) html += `<span class="inter-item">• <strong>Mužský faktor:</strong> Bez selekční metody (ZyMōt) hrozí vyšší fragmentace DNA a zastavení vývoje embryí.</span>`;
+    if (zymot && male) html += `<span class="inter-item">• <strong>ZyMōt:</strong> Použití čipu kompenzuje mužský faktor a zvyšuje šanci na zisk zdravé blastocysty.</span>`;
     if (endo) html += `<span class="inter-item">• <strong>Endometrióza:</strong> Může být přítomna nižší výtěžnost a mírně horší kvalita vajíček.</span>`;
     
     if (euCount < 0.8) html += `<span class="inter-item" style="color:var(--warning)">• <strong>Doporučení:</strong> Vzhledem k predikci zvažte metodu kumulace embryí (Pooling).</span>`;
