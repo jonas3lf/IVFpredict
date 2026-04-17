@@ -199,7 +199,7 @@ function calculate() {
     const icsi = document.getElementById('icsi').checked;
     const zymot = document.getElementById('zymot').checked;
 
-    // 1. Oocyty
+    // 1. Oocyty (MII)
     let eggBase = amh * 5.2;
     if (afc > 0) eggBase = (eggBase * 0.5) + (afc * 0.9 * 0.5);
     if (pcos) eggBase *= 1.25;
@@ -209,27 +209,37 @@ function calculate() {
     if (prev > 0) eggBase *= (prev === 1 ? 0.9 : 0.8);
     let eggs = Math.round(Math.max(1, Math.min(35, eggBase)));
 
-    // 2. Blastocysty
-    let blastRate = 0.38;
+    // 2. Blastocysty - Dynamické penalizace dle věku (biologická kvalita cytoplazmy)
+    let blastRate = 0.40; // Základ
     if (icsi) blastRate = 0.45;
+    
+    // Věková penalizace pro vývoj blastocysty (mitochondriální deficit)
+    if (age >= 38 && age <= 40) blastRate *= 0.90;
+    else if (age >= 41 && age <= 42) blastRate *= 0.75;
+    else if (age >= 43 && age <= 45) blastRate *= 0.55;
+    else if (age > 45) blastRate *= 0.35;
+
     if (male) blastRate *= (zymot ? 0.95 : 0.72);
     if (smoke) blastRate *= 0.82;
     if (endo) blastRate *= 0.92;
     if (pcos) blastRate *= 0.90; 
+
     let blasts = eggs * blastRate;
 
-    // 3. Euploidie
+    // 3. Euploidie (genetická zdravost)
     let euRate = 0.65;
     if (age >= 35 && age < 38) euRate = 0.50;
     else if (age >= 38 && age < 40) euRate = 0.35;
     else if (age >= 40 && age < 42) euRate = 0.20;
-    else if (age >= 42) euRate = 0.08;
+    else if (age >= 42 && age < 45) euRate = 0.08;
+    else if (age >= 45) euRate = 0.03;
+    
     let euCount = blasts * euRate;
     
     let finalProb = Math.round((1 - Math.exp(-euCount)) * 100);
     if (finalProb > 96) finalProb = 96;
 
-    // UI
+    // UI Update
     document.getElementById('result').style.display = 'block';
     document.getElementById('main_prob').innerText = finalProb + "%";
     document.getElementById('res_eggs').innerText = eggs;
@@ -244,26 +254,32 @@ function calculate() {
 
     // DYNAMICKÁ INTERPRETACE
     let html = `<strong>Klinická úvaha:</strong><br><br>`;
-    html += `<span class="inter-item">• <strong>Věk:</strong> Šance na zdravé embryo je ${Math.round(euRate*100)} % (odpovídá ${age} letům).</span>`;
+    
+    // Věk 40+ speciální upozornění
+    if (age >= 40) {
+        html += `<span class="inter-item" style="color:#D70015; font-weight:700;">• Věk nad 40 let: Kvalita oocytů (cytoplazmy) významně klesá, což se projevuje vysokou mírou zastavení vývoje embryí a rizikem aneuploidií.</span>`;
+    } else {
+        html += `<span class="inter-item">• <strong>Věk:</strong> Šance na zdravé embryo je ${Math.round(euRate*100)} % na blastocystu (věk ${age} let).</span>`;
+    }
     
     if (pcos) {
         html += `<span class="inter-item">• <strong>PCOS:</strong> Očekáváme vysoký počet vajíček, ale často nižší kvality. Vzhledem k riziku OHSS je doporučen "Freeze-all" protokol a následný KET.</span>`;
     }
     
     if (bmi > 30) {
-        html += `<span class="inter-item">• <strong>BMI (${bmi.toFixed(1)}):</strong> Nadváha způsobuje horší reakci na stimulaci, což vyžaduje vyšší dávky hormonů. Navíc snižuje šanci na úspěšnou implantaci a zvyšuje rizika těhotenských komplikací.</span>`;
+        html += `<span class="inter-item">• <strong>BMI (${bmi.toFixed(1)}):</strong> Nadváha způsobuje horší reakci na stimulaci (nutné vyšší dávky hormonů), nižší šanci na implantaci a vyšší rizika komplikací.</span>`;
     }
 
     if (smoke) {
-        html += `<span class="inter-item">• <strong>Kouření:</strong> Výrazně zvyšuje oxidační stres a snižuje šanci na kvalitní blastocysty. Doporučujeme zvýšený příjem <strong>antioxidantů</strong> (Melatonin, CoQ10, Vitamín E).</span>`;
+        html += `<span class="inter-item">• <strong>Kouření:</strong> Výrazně zvyšuje oxidační stres a poškozuje oocyty. Nutný příjem <strong>antioxidantů</strong> (Melatonin, CoQ10, Vit. E).</span>`;
     }
 
-    if (male && !zymot) html += `<span class="inter-item">• <strong>Mužský faktor:</strong> Bez selekční metody (ZyMōt) hrozí vyšší fragmentace DNA a zastavení vývoje embryí.</span>`;
-    if (zymot && male) html += `<span class="inter-item">• <strong>ZyMōt:</strong> Použití čipu kompenzuje mužský faktor a zvyšuje šanci na zisk zdravé blastocysty.</span>`;
-    if (endo) html += `<span class="inter-item">• <strong>Endometrióza:</strong> Může být přítomna nižší výtěžnost a mírně horší kvalita vajíček.</span>`;
+    if (male && !zymot) html += `<span class="inter-item">• <strong>Mužský faktor:</strong> Bez selekce (ZyMōt) hrozí vyšší fragmentace DNA a selhání vývoje.</span>`;
+    if (zymot && male) html += `<span class="inter-item">• <strong>ZyMōt:</strong> Čip kompenzuje mužský faktor a zvyšuje šanci na zisk zdravé blastocysty.</span>`;
+    if (endo) html += `<span class="inter-item">• <strong>Endometrióza:</strong> Riziko nižší výtěžnosti a mírně horší kvality vajíček.</span>`;
     
-    if (euCount < 0.8) html += `<span class="inter-item" style="color:var(--warning)">• <strong>Doporučení:</strong> Vzhledem k predikci zvažte metodu kumulace embryí (Pooling).</span>`;
-    else html += `<span class="inter-item" style="color:var(--success)">• <strong>Doporučení:</strong> Dobrá prognóza pro eSET (přenos jednoho embrya).</span>`;
+    if (euCount < 0.8) html += `<span class="inter-item" style="color:var(--warning)">• <strong>Doporučení:</strong> Vzhledem k predikci zvažte metodu kumulace embryí (Social/Medical Pooling).</span>`;
+    else html += `<span class="inter-item" style="color:var(--success)">• <strong>Doporučení:</strong> Dobrá prognóza pro eSET (přenos jednoho zdravého embrya).</span>`;
 
     document.getElementById('interpret').innerHTML = html;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
