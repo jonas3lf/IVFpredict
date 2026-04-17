@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon3.PNG">
-    <title>IVF Clinical Predictor</title>
+    <title>IVF Predictor PRO</title>
     <style>
         :root {
             --clinic-blue: #0071E3;
@@ -18,6 +18,7 @@
             --success: #34C759;
             --purple: #A259FF;
             --warning: #FF9500;
+            --error: #FF3B30;
         }
 
         body {
@@ -85,9 +86,12 @@
         }
 
         #result { display: none; margin-top: 15px; }
-        .res-main { text-align: center; padding: 20px 10px; }
+        .res-main { text-align: center; padding: 20px 10px; border: 2px solid var(--clinic-blue); }
         .res-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
         .res-value { font-size: 52px; font-weight: 800; color: var(--clinic-blue); letter-spacing: -1.5px; line-height: 1.2; }
+
+        .cumulative-card { background: #E8F2FF; border: none; text-align: center; }
+        .cum-val { font-size: 24px; font-weight: 700; color: var(--clinic-blue); }
 
         .stat-row { margin-bottom: 12px; }
         .stat-info { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
@@ -106,8 +110,8 @@
 
 <div class="container">
     <header>
-        <h1>IVF Clinical Predictor</h1>
-        <p>Personalizovaná prognóza cyklu</p>
+        <h1>IVF Predictor PRO</h1>
+        <p>Klinický model & Prognostický report</p>
     </header>
 
     <div class="card">
@@ -133,45 +137,52 @@
     </div>
 
     <div class="card">
-        <h2>Klinické faktory & Diagnózy</h2>
-        <div class="toggle-row"><label>PCOS (polycystická ovária)</label><label class="switch"><input type="checkbox" id="pcos"><span class="slider"></span></label></div>
+        <h2>Klinické diagnózy</h2>
+        <div class="toggle-row"><label>PCOS (polyovariální syndrom)</label><label class="switch"><input type="checkbox" id="pcos"><span class="slider"></span></label></div>
         <div class="toggle-row"><label>Endometrióza (EMS)</label><label class="switch"><input type="checkbox" id="endo"><span class="slider"></span></label></div>
-        <div class="toggle-row"><label>Závažný mužský faktor</label><label class="switch"><input type="checkbox" id="male"><span class="slider"></span></label></div>
-        <div class="toggle-row"><label>Aktivní kouření (pár)</label><label class="switch"><input type="checkbox" id="smoke"><span class="slider"></span></label></div>
+        <div class="toggle-row"><label>Fragmentace DNA spermií >20%</label><label class="switch"><input type="checkbox" id="male_dna"><span class="slider"></span></label></div>
+        <div class="toggle-row"><label>Kouření (aktivní u páru)</label><label class="switch"><input type="checkbox" id="smoke"><span class="slider"></span></label></div>
         <div class="input-group" style="margin-top:10px;">
-            <label>Předchozí neúspěšná OPU</label>
-            <select id="prev_opu"><option value="0">Žádná</option><option value="1">1 cyklus</option><option value="2">2 a více</option></select>
+            <label>Anamnéza neúspěšných OPU</label>
+            <select id="prev_opu"><option value="0">Žádná / První cyklus</option><option value="1">1 neúspěšný cyklus</option><option value="2">2 a více neúspěšných</option></select>
         </div>
     </div>
 
     <div class="card">
-        <h2>Laboratorní metody</h2>
-        <div class="grid">
-            <div class="toggle-row" style="border:none; padding:0;"><label>Metoda ICSI</label><label class="switch"><input type="checkbox" id="icsi" checked><span class="slider"></span></label></div>
-            <div class="toggle-row" style="border:none; padding:0;"><label>ZyMōt selekce</label><label class="switch"><input type="checkbox" id="zymot" checked><span class="slider"></span></label></div>
+        <h2>Optimalizace & Metody</h2>
+        <div class="toggle-row"><label>Štítná žláza (TSH < 2.5)</label><label class="switch"><input type="checkbox" id="tsh" checked><span class="slider"></span></label></div>
+        <div class="toggle-row"><label>Vitamin D (> 30 ng/ml)</label><label class="switch"><input type="checkbox" id="vitd" checked><span class="slider"></span></label></div>
+        <div class="grid" style="margin-top:10px;">
+            <div class="toggle-row" style="border:none; padding:0;"><label>ICSI/PICSI</label><label class="switch"><input type="checkbox" id="icsi" checked><span class="slider"></span></label></div>
+            <div class="toggle-row" style="border:none; padding:0;"><label>ZyMōt čip</label><label class="switch"><input type="checkbox" id="zymot" checked><span class="slider"></span></label></div>
         </div>
     </div>
 
-    <button onclick="calculate()">Vypočítat klinickou prognózu</button>
+    <button onclick="calculate()">Generovat klinický report</button>
 
     <div id="result">
         <div class="card res-main">
-            <div class="res-label">Šance na euploidní embryo (1 cyklus)</div>
+            <div class="res-label">Šance na zdravé embryo (1 cyklus)</div>
             <div class="res-value" id="main_prob">0%</div>
         </div>
 
+        <div class="card cumulative-card">
+            <div class="res-label" style="color:var(--clinic-blue)">Kumulativní šance (3 cykly)</div>
+            <div class="cum-val" id="cum_prob">0%</div>
+        </div>
+
         <div class="card">
-            <h2>Předpokládaný výsledek</h2>
+            <h2>Předpokládaný výtěžek</h2>
             <div class="stat-row">
-                <div class="stat-info"><span>Vajíčka (MII)</span><span id="res_eggs">0</span></div>
+                <div class="stat-info"><span>Získaná vajíčka (MII)</span><span id="res_eggs">0</span></div>
                 <div class="bar-bg"><div id="bar_eggs" class="bar-fill" style="background:var(--clinic-blue)"></div></div>
             </div>
             <div class="stat-row">
-                <div class="stat-info"><span>Blastocysty</span><span id="res_blasts">0</span></div>
+                <div class="stat-info"><span>Dosažené blastocysty</span><span id="res_blasts">0</span></div>
                 <div class="bar-bg"><div id="bar_blasts" class="bar-fill" style="background:var(--purple)"></div></div>
             </div>
             <div class="stat-row">
-                <div class="stat-info"><span>Euploidní embrya</span><span id="res_eu">0</span></div>
+                <div class="stat-info"><span>Euploidní (zdravá) embrya</span><span id="res_eu">0</span></div>
                 <div class="bar-bg"><div id="bar_eu" class="bar-fill" style="background:var(--success)"></div></div>
             </div>
             <div id="interpret" class="interpretation"></div>
@@ -193,93 +204,80 @@ function calculate() {
     
     const pcos = document.getElementById('pcos').checked;
     const endo = document.getElementById('endo').checked;
-    const male = document.getElementById('male').checked;
+    const male_dna = document.getElementById('male_dna').checked;
     const smoke = document.getElementById('smoke').checked;
+    const tsh = document.getElementById('tsh').checked;
+    const vitd = document.getElementById('vitd').checked;
     const prev = parseInt(document.getElementById('prev_opu').value);
     const icsi = document.getElementById('icsi').checked;
     const zymot = document.getElementById('zymot').checked;
 
-    // 1. Oocyty (MII)
+    // 1. Logika vajíček
     let eggBase = amh * 5.2;
-    if (afc > 0) eggBase = (eggBase * 0.5) + (afc * 0.9 * 0.5);
-    if (pcos) eggBase *= 1.25;
-    if (endo) eggBase *= 0.82;
-    if (smoke) eggBase *= 0.88;
+    if (afc > 0) eggBase = (eggBase * 0.4) + (afc * 0.9 * 0.6);
+    if (pcos) eggBase *= 1.3;
+    if (endo) eggBase *= 0.8;
     if (bmi > 30) eggBase *= 0.85;
-    if (prev > 0) eggBase *= (prev === 1 ? 0.9 : 0.8);
+    if (!vitd) eggBase *= 0.95; 
     let eggs = Math.round(Math.max(1, Math.min(35, eggBase)));
 
-    // 2. Blastocysty - Dynamické penalizace dle věku (biologická kvalita cytoplazmy)
-    let blastRate = 0.40; // Základ
+    // 2. Logika blastocyst s věkovou penalizací
+    let blastRate = 0.40;
     if (icsi) blastRate = 0.45;
+    if (age > 40) blastRate *= 0.7;
+    if (age > 43) blastRate *= 0.5;
+    if (male_dna) blastRate *= (zymot ? 0.9 : 0.6);
+    if (smoke) blastRate *= 0.8;
+    if (pcos) blastRate *= 0.9; 
     
-    // Věková penalizace pro vývoj blastocysty (mitochondriální deficit)
-    if (age >= 38 && age <= 40) blastRate *= 0.90;
-    else if (age >= 41 && age <= 42) blastRate *= 0.75;
-    else if (age >= 43 && age <= 45) blastRate *= 0.55;
-    else if (age > 45) blastRate *= 0.35;
-
-    if (male) blastRate *= (zymot ? 0.95 : 0.72);
-    if (smoke) blastRate *= 0.82;
-    if (endo) blastRate *= 0.92;
-    if (pcos) blastRate *= 0.90; 
-
     let blasts = eggs * blastRate;
 
-    // 3. Euploidie (genetická zdravost)
+    // 3. Euploidie dle věku
     let euRate = 0.65;
     if (age >= 35 && age < 38) euRate = 0.50;
     else if (age >= 38 && age < 40) euRate = 0.35;
-    else if (age >= 40 && age < 42) euRate = 0.20;
-    else if (age >= 42 && age < 45) euRate = 0.08;
-    else if (age >= 45) euRate = 0.03;
+    else if (age >= 40 && age < 42) euRate = 0.18;
+    else if (age >= 42) euRate = 0.07;
     
     let euCount = blasts * euRate;
     
-    let finalProb = Math.round((1 - Math.exp(-euCount)) * 100);
+    // Šance na 1 cyklus
+    let prob1 = (1 - Math.exp(-euCount));
+    let finalProb = Math.round(prob1 * 100);
     if (finalProb > 96) finalProb = 96;
 
-    // UI Update
+    // Kumulativní šance (3 cykly)
+    let cumProb = Math.round((1 - Math.pow(1 - prob1, 3)) * 100);
+    if (cumProb > 99) cumProb = 99;
+
+    // UI
     document.getElementById('result').style.display = 'block';
     document.getElementById('main_prob').innerText = finalProb + "%";
+    document.getElementById('cum_prob').innerText = cumProb + "%";
     document.getElementById('res_eggs').innerText = eggs;
     document.getElementById('res_blasts').innerText = blasts.toFixed(1);
     document.getElementById('res_eu').innerText = euCount.toFixed(1);
 
     setTimeout(() => {
         document.getElementById('bar_eggs').style.width = (eggs / 35 * 100) + "%";
-        document.getElementById('bar_blasts').style.width = Math.min((blasts / eggs * 250), 100) + "%";
+        document.getElementById('bar_blasts').style.width = Math.min((blasts / eggs * 200), 100) + "%";
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
-    // DYNAMICKÁ INTERPRETACE
-    let html = `<strong>Klinická úvaha:</strong><br><br>`;
+    // Interpretace
+    let html = `<strong>Klinické zhodnocení:</strong><br><br>`;
     
-    // Věk 40+ speciální upozornění
-    if (age >= 40) {
-        html += `<span class="inter-item" style="color:#D70015; font-weight:700;">• Věk nad 40 let: Kvalita oocytů (cytoplazmy) významně klesá, což se projevuje vysokou mírou zastavení vývoje embryí a rizikem aneuploidií.</span>`;
-    } else {
-        html += `<span class="inter-item">• <strong>Věk:</strong> Šance na zdravé embryo je ${Math.round(euRate*100)} % na blastocystu (věk ${age} let).</span>`;
-    }
+    if (age >= 40) html += `<span class="inter-item" style="color:var(--error)">• <strong>Kritický věk:</strong> Kvalita cytoplazmy oocytů je snížena. Úspěch závisí na zisku euploidního embrya, což může vyžadovat více cyklů (Pooling).</span>`;
     
-    if (pcos) {
-        html += `<span class="inter-item">• <strong>PCOS:</strong> Očekáváme vysoký počet vajíček, ale často nižší kvality. Vzhledem k riziku OHSS je doporučen "Freeze-all" protokol a následný KET.</span>`;
-    }
+    if (male_dna && !zymot) html += `<span class="inter-item" style="color:var(--warning)">• <strong>DNA Fragmentace:</strong> Bez použití ZyMōtu hrozí vysoké riziko zastavení vývoje embryí po 3. dni.</span>`;
     
-    if (bmi > 30) {
-        html += `<span class="inter-item">• <strong>BMI (${bmi.toFixed(1)}):</strong> Nadváha způsobuje horší reakci na stimulaci (nutné vyšší dávky hormonů), nižší šanci na implantaci a vyšší rizika komplikací.</span>`;
-    }
+    if (!tsh) html += `<span class="inter-item">• <strong>Štítná žláza:</strong> TSH nad 2.5 může negativně ovlivnit implantaci a zvýšit riziko raného potratu.</span>`;
+    
+    if (pcos) html += `<span class="inter-item">• <strong>PCOS:</strong> Vysoká kvantita, ale riziko nižší kvality. Doporučen eSET v KET cyklu (prevence OHSS).</span>`;
 
-    if (smoke) {
-        html += `<span class="inter-item">• <strong>Kouření:</strong> Výrazně zvyšuje oxidační stres a poškozuje oocyty. Nutný příjem <strong>antioxidantů</strong> (Melatonin, CoQ10, Vit. E).</span>`;
-    }
+    if (bmi > 30) html += `<span class="inter-item">• <strong>BMI:</strong> Doporučujeme úpravu hmotnosti pro zlepšení metabolické odpovědi na stimulaci.</span>`;
 
-    if (male && !zymot) html += `<span class="inter-item">• <strong>Mužský faktor:</strong> Bez selekce (ZyMōt) hrozí vyšší fragmentace DNA a selhání vývoje.</span>`;
-    if (zymot && male) html += `<span class="inter-item">• <strong>ZyMōt:</strong> Čip kompenzuje mužský faktor a zvyšuje šanci na zisk zdravé blastocysty.</span>`;
-    if (endo) html += `<span class="inter-item">• <strong>Endometrióza:</strong> Riziko nižší výtěžnosti a mírně horší kvality vajíček.</span>`;
-    
-    if (euCount < 0.8) html += `<span class="inter-item" style="color:var(--warning)">• <strong>Doporučení:</strong> Vzhledem k predikci zvažte metodu kumulace embryí (Social/Medical Pooling).</span>`;
-    else html += `<span class="inter-item" style="color:var(--success)">• <strong>Doporučení:</strong> Dobrá prognóza pro eSET (přenos jednoho zdravého embrya).</span>`;
+    html += `<br><strong>Strategie:</strong> Pro dosažení <strong>${cumProb}%</strong> kumulativní šance doporučujeme dokončit až 3 stimulační cykly.`;
 
     document.getElementById('interpret').innerHTML = html;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
