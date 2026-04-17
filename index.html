@@ -140,7 +140,7 @@
         <h2>Klinické diagnózy</h2>
         <div class="toggle-row"><label>PCOS (polyovariální syndrom)</label><label class="switch"><input type="checkbox" id="pcos"><span class="slider"></span></label></div>
         <div class="toggle-row"><label>Endometrióza (EMS)</label><label class="switch"><input type="checkbox" id="endo"><span class="slider"></span></label></div>
-        <div class="toggle-row"><label>Fragmentace DNA spermií >20%</label><label class="switch"><input type="checkbox" id="male_dna"><span class="slider"></span></label></div>
+        <div class="toggle-row"><label>DNAf >30% / OAT syndrom</label><label class="switch"><input type="checkbox" id="male_dna"><span class="slider"></span></label></div>
         <div class="toggle-row"><label>Kouření (aktivní u páru)</label><label class="switch"><input type="checkbox" id="smoke"><span class="slider"></span></label></div>
         <div class="input-group" style="margin-top:10px;">
             <label>Anamnéza neúspěšných OPU</label>
@@ -153,7 +153,7 @@
         <div class="toggle-row"><label>Štítná žláza (TSH < 2.5)</label><label class="switch"><input type="checkbox" id="tsh" checked><span class="slider"></span></label></div>
         <div class="toggle-row"><label>Vitamin D (> 30 ng/ml)</label><label class="switch"><input type="checkbox" id="vitd" checked><span class="slider"></span></label></div>
         <div class="grid" style="margin-top:10px;">
-            <div class="toggle-row" style="border:none; padding:0;"><label>ICSI/PICSI</label><label class="switch"><input type="checkbox" id="icsi" checked><span class="slider"></span></label></div>
+            <div class="toggle-row" style="border:none; padding:0;"><label>Metoda ICSI</label><label class="switch"><input type="checkbox" id="icsi" checked><span class="slider"></span></label></div>
             <div class="toggle-row" style="border:none; padding:0;"><label>ZyMōt čip</label><label class="switch"><input type="checkbox" id="zymot" checked><span class="slider"></span></label></div>
         </div>
     </div>
@@ -226,7 +226,12 @@ function calculate() {
     if (icsi) blastRate = 0.45;
     if (age > 40) blastRate *= 0.7;
     if (age > 43) blastRate *= 0.5;
-    if (male_dna) blastRate *= (zymot ? 0.9 : 0.6);
+    
+    // Závažný mužský faktor (DNAf >30% nebo OAT)
+    if (male_dna) {
+        blastRate *= (zymot ? 0.92 : 0.55); // Bez Zymotu u DNAf >30% je propad drastický
+    }
+    
     if (smoke) blastRate *= 0.8;
     if (pcos) blastRate *= 0.9; 
     
@@ -267,17 +272,22 @@ function calculate() {
     // Interpretace
     let html = `<strong>Klinické zhodnocení:</strong><br><br>`;
     
-    if (age >= 40) html += `<span class="inter-item" style="color:var(--error)">• <strong>Kritický věk:</strong> Kvalita cytoplazmy oocytů je snížena. Úspěch závisí na zisku euploidního embrya, což může vyžadovat více cyklů (Pooling).</span>`;
+    if (age >= 40) html += `<span class="inter-item" style="color:var(--error)">• <strong>Kritický věk:</strong> Významně snížená kvalita cytoplazmy. Pro dosažení úspěchu může být nutná kumulace embryí.</span>`;
     
-    if (male_dna && !zymot) html += `<span class="inter-item" style="color:var(--warning)">• <strong>DNA Fragmentace:</strong> Bez použití ZyMōtu hrozí vysoké riziko zastavení vývoje embryí po 3. dni.</span>`;
+    if (male_dna) {
+        if (!zymot) {
+            html += `<span class="inter-item" style="color:var(--error)">• <strong>Mužský faktor:</strong> Při DNAf > 30 % / OAT hrozí bez selekční metody ZyMōt vysoké riziko vývojového arrestu embryí.</span>`;
+        } else {
+            html += `<span class="inter-item" style="color:var(--success)">• <strong>Mužský faktor:</strong> Rizika DNA fragmentace a OAT jsou kompenzována použitím mikrofluidního čipu ZyMōt.</span>`;
+        }
+    }
     
-    if (!tsh) html += `<span class="inter-item">• <strong>Štítná žláza:</strong> TSH nad 2.5 může negativně ovlivnit implantaci a zvýšit riziko raného potratu.</span>`;
-    
-    if (pcos) html += `<span class="inter-item">• <strong>PCOS:</strong> Vysoká kvantita, ale riziko nižší kvality. Doporučen eSET v KET cyklu (prevence OHSS).</span>`;
+    if (!tsh) html += `<span class="inter-item">• <strong>Štítná žláza:</strong> TSH nad 2.5 může negativně ovlivnit proces implantace.</span>`;
+    if (pcos) html += `<span class="inter-item">• <strong>PCOS:</strong> Riziko OHSS a nižší kvality oocytů. Doporučen transfer jednoho embrya (eSET).</span>`;
+    if (bmi > 30) html += `<span class="inter-item">• <strong>BMI:</strong> Nadváha snižuje šanci na implantaci a zvyšuje rizika těhotenských komplikací.</span>`;
+    if (smoke) html += `<span class="inter-item">• <strong>Kouření:</strong> Nutná suplementace antioxidanty (CoQ10) pro snížení oxidačního stresu v gametách.</span>`;
 
-    if (bmi > 30) html += `<span class="inter-item">• <strong>BMI:</strong> Doporučujeme úpravu hmotnosti pro zlepšení metabolické odpovědi na stimulaci.</span>`;
-
-    html += `<br><strong>Strategie:</strong> Pro dosažení <strong>${cumProb}%</strong> kumulativní šance doporučujeme dokončit až 3 stimulační cykly.`;
+    html += `<br><strong>Strategie:</strong> Predikovaná kumulativní úspěšnost po 3 cyklech je <strong>${cumProb}%</strong>.`;
 
     document.getElementById('interpret').innerHTML = html;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
