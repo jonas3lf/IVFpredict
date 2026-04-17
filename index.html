@@ -212,13 +212,19 @@ function calculate() {
     const icsi = document.getElementById('icsi').checked;
     const zymot = document.getElementById('zymot').checked;
 
-    // 1. Logika vajíček
+    // 1. Logika vajíček (ZDE OPRAVENA PENALIZACE PŘEDCHOZÍCH POKUSŮ)
     let eggBase = amh * 5.2;
     if (afc > 0) eggBase = (eggBase * 0.4) + (afc * 0.9 * 0.6);
+    
     if (pcos) eggBase *= 1.3;
     if (endo) eggBase *= 0.8;
     if (bmi > 30) eggBase *= 0.85;
     if (!vitd) eggBase *= 0.95; 
+    
+    // Návrat k původně funkční penalizaci předchozích neúspěšných OPU
+    if (prev === 1) eggBase *= 0.9;
+    if (prev === 2) eggBase *= 0.8;
+
     let eggs = Math.round(Math.max(1, Math.min(35, eggBase)));
 
     // 2. Logika blastocyst s věkovou penalizací
@@ -227,9 +233,8 @@ function calculate() {
     if (age > 40) blastRate *= 0.7;
     if (age > 43) blastRate *= 0.5;
     
-    // Závažný mužský faktor (DNAf >30% nebo OAT)
     if (male_dna) {
-        blastRate *= (zymot ? 0.92 : 0.55); // Bez Zymotu u DNAf >30% je propad drastický
+        blastRate *= (zymot ? 0.92 : 0.55);
     }
     
     if (smoke) blastRate *= 0.8;
@@ -255,7 +260,7 @@ function calculate() {
     let cumProb = Math.round((1 - Math.pow(1 - prob1, 3)) * 100);
     if (cumProb > 99) cumProb = 99;
 
-    // UI
+    // UI Update
     document.getElementById('result').style.display = 'block';
     document.getElementById('main_prob').innerText = finalProb + "%";
     document.getElementById('cum_prob').innerText = cumProb + "%";
@@ -265,7 +270,7 @@ function calculate() {
 
     setTimeout(() => {
         document.getElementById('bar_eggs').style.width = (eggs / 35 * 100) + "%";
-        document.getElementById('bar_blasts').style.width = Math.min((blasts / eggs * 200), 100) + "%";
+        document.getElementById('bar_blasts').style.width = Math.min((blasts / (eggs || 1) * 200), 100) + "%";
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
@@ -282,6 +287,7 @@ function calculate() {
         }
     }
     
+    if (prev > 0) html += `<span class="inter-item">• <strong>Předchozí neúspěch:</strong> Historie neúspěšných OPU indikuje potřebu úpravy stimulačního protokolu pro zlepšení výtěžnosti.</span>`;
     if (!tsh) html += `<span class="inter-item">• <strong>Štítná žláza:</strong> TSH nad 2.5 může negativně ovlivnit proces implantace.</span>`;
     if (pcos) html += `<span class="inter-item">• <strong>PCOS:</strong> Riziko OHSS a nižší kvality oocytů. Doporučen transfer jednoho embrya (eSET).</span>`;
     if (bmi > 30) html += `<span class="inter-item">• <strong>BMI:</strong> Nadváha snižuje šanci na implantaci a zvyšuje rizika těhotenských komplikací.</span>`;
