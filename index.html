@@ -192,6 +192,7 @@
 
 <script>
 function calculate() {
+    // 1. VSTUPY
     let age = parseInt(document.getElementById('age').value);
     let amh = parseFloat(document.getElementById('amh').value);
     const unit = document.getElementById('amh_unit').value;
@@ -212,27 +213,32 @@ function calculate() {
     const icsi = document.getElementById('icsi').checked;
     const zymot = document.getElementById('zymot').checked;
 
-    // 1. Logika vajíček (ZDE OPRAVENA PENALIZACE PŘEDCHOZÍCH POKUSŮ)
+    // 2. VÝPOČET VAJÍČEK (MII)
     let eggBase = amh * 5.2;
     if (afc > 0) eggBase = (eggBase * 0.4) + (afc * 0.9 * 0.6);
     
+    // Kumulativní penalizace a bonusy
     if (pcos) eggBase *= 1.3;
     if (endo) eggBase *= 0.8;
     if (bmi > 30) eggBase *= 0.85;
     if (!vitd) eggBase *= 0.95; 
     
-    // Návrat k původně funkční penalizaci předchozích neúspěšných OPU
+    // FIX: Penalizace neúspěšných OPU
     if (prev === 1) eggBase *= 0.9;
     if (prev === 2) eggBase *= 0.8;
 
     let eggs = Math.round(Math.max(1, Math.min(35, eggBase)));
 
-    // 2. Logika blastocyst s věkovou penalizací
+    // 3. VÝPOČET BLASTOCYST (Kvalita vývoje)
     let blastRate = 0.40;
     if (icsi) blastRate = 0.45;
-    if (age > 40) blastRate *= 0.7;
-    if (age > 43) blastRate *= 0.5;
     
+    // Age-Blast-Penalty (progresivní pokles nad 40 let)
+    if (age > 40 && age <= 42) blastRate *= 0.75;
+    else if (age > 42 && age <= 44) blastRate *= 0.55;
+    else if (age > 44) blastRate *= 0.35;
+    
+    // Mužský faktor vs. ZyMōt
     if (male_dna) {
         blastRate *= (zymot ? 0.92 : 0.55);
     }
@@ -242,16 +248,17 @@ function calculate() {
     
     let blasts = eggs * blastRate;
 
-    // 3. Euploidie dle věku
+    // 4. EUPLOIDIE (Genetická zdravost)
     let euRate = 0.65;
     if (age >= 35 && age < 38) euRate = 0.50;
     else if (age >= 38 && age < 40) euRate = 0.35;
     else if (age >= 40 && age < 42) euRate = 0.18;
-    else if (age >= 42) euRate = 0.07;
+    else if (age >= 42 && age < 45) euRate = 0.07;
+    else if (age >= 45) euRate = 0.03;
     
     let euCount = blasts * euRate;
     
-    // Šance na 1 cyklus
+    // Šance na alespoň jedno euploidní embryo (1-p^n)
     let prob1 = (1 - Math.exp(-euCount));
     let finalProb = Math.round(prob1 * 100);
     if (finalProb > 96) finalProb = 96;
@@ -260,7 +267,7 @@ function calculate() {
     let cumProb = Math.round((1 - Math.pow(1 - prob1, 3)) * 100);
     if (cumProb > 99) cumProb = 99;
 
-    // UI Update
+    // UI UPDATE
     document.getElementById('result').style.display = 'block';
     document.getElementById('main_prob').innerText = finalProb + "%";
     document.getElementById('cum_prob').innerText = cumProb + "%";
@@ -274,26 +281,28 @@ function calculate() {
         document.getElementById('bar_eu').style.width = (euRate * 100) + "%";
     }, 100);
 
-    // Interpretace
+    // DYNAMICKÁ INTERPRETACE
     let html = `<strong>Klinické zhodnocení:</strong><br><br>`;
     
-    if (age >= 40) html += `<span class="inter-item" style="color:var(--error)">• <strong>Kritický věk:</strong> Významně snížená kvalita cytoplazmy. Pro dosažení úspěchu může být nutná kumulace embryí.</span>`;
+    if (age >= 40) {
+        html += `<span class="inter-item" style="color:var(--error)">• <strong>Kritický věk:</strong> Kvalita vajíček je snížena biologickým věkem. I při dobrém AMH je riziko zastavení vývoje embryí vysoké.</span>`;
+    }
     
     if (male_dna) {
         if (!zymot) {
-            html += `<span class="inter-item" style="color:var(--error)">• <strong>Mužský faktor:</strong> Při DNAf > 30 % / OAT hrozí bez selekční metody ZyMōt vysoké riziko vývojového arrestu embryí.</span>`;
+            html += `<span class="inter-item" style="color:var(--error)">• <strong>Mužský faktor:</strong> Bez selekční metody ZyMōt hrozí u DNAf > 30 % / OAT vysoké riziko vývojového arrestu embryí po 3. dni.</span>`;
         } else {
-            html += `<span class="inter-item" style="color:var(--success)">• <strong>Mužský faktor:</strong> Rizika DNA fragmentace a OAT jsou kompenzována použitím mikrofluidního čipu ZyMōt.</span>`;
+            html += `<span class="inter-item" style="color:var(--success)">• <strong>Mužský faktor:</strong> Použití ZyMōt čipu významně snižuje dopad DNA fragmentace na vývoj blastocyst.</span>`;
         }
     }
     
-    if (prev > 0) html += `<span class="inter-item">• <strong>Předchozí neúspěch:</strong> Historie neúspěšných OPU indikuje potřebu úpravy stimulačního protokolu pro zlepšení výtěžnosti.</span>`;
-    if (!tsh) html += `<span class="inter-item">• <strong>Štítná žláza:</strong> TSH nad 2.5 může negativně ovlivnit proces implantace.</span>`;
-    if (pcos) html += `<span class="inter-item">• <strong>PCOS:</strong> Riziko OHSS a nižší kvality oocytů. Doporučen transfer jednoho embrya (eSET).</span>`;
+    if (prev > 0) html += `<span class="inter-item">• <strong>Anamnéza:</strong> Předchozí neúspěchy byly zohledněny v predikci výtěžnosti (snížená citlivost na stimulaci).</span>`;
+    if (!tsh) html += `<span class="inter-item">• <strong>Štítná žláza:</strong> Doporučujeme stabilizaci TSH pod 2.5 pro optimalizaci uhnízdění.</span>`;
+    if (pcos) html += `<span class="inter-item">• <strong>PCOS:</strong> Očekáváme kvantitu, ale doporučujeme eSET v odloženém KET cyklu.</span>`;
     if (bmi > 30) html += `<span class="inter-item">• <strong>BMI:</strong> Nadváha snižuje šanci na implantaci a zvyšuje rizika těhotenských komplikací.</span>`;
-    if (smoke) html += `<span class="inter-item">• <strong>Kouření:</strong> Nutná suplementace antioxidanty (CoQ10) pro snížení oxidačního stresu v gametách.</span>`;
+    if (smoke) html += `<span class="inter-item">• <strong>Kouření:</strong> Indikována suplementace <strong>antioxidantů</strong> (CoQ10, Vit. E) pro snížení oxidačního stresu.</span>`;
 
-    html += `<br><strong>Strategie:</strong> Predikovaná kumulativní úspěšnost po 3 cyklech je <strong>${cumProb}%</strong>.`;
+    html += `<br><strong>Strategie:</strong> Predikovaná kumulativní úspěšnost po 3 stimulačních cyklech je <strong>${cumProb}%</strong>.`;
 
     document.getElementById('interpret').innerHTML = html;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
